@@ -4,17 +4,33 @@ import akka.pattern.{ after, ask, pipe }
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
 
+/****************************************************************************************************/
+
 sealed class RenderResponse()
 
 case class RenderedContent(label:String, mimeType:String, content:String) extends RenderResponse
 
 case class RenderTimeout(label:String) extends RenderResponse
 
+/****************************************************************************************************/
+
+class Content {
+
+
+
+
+}
+
+
+/****************************************************************************************************/
+
 sealed class Response
 
 case class RedirectResponse(repository:Repository, path:String) extends Response
 
 case class ContentResponse[T](kind:String, content:T) extends Response
+
+/****************************************************************************************************/
 
 trait Repository {
 
@@ -24,6 +40,8 @@ trait Repository {
 }
 
 case class Location(repository:Repository, path:String)
+
+/****************************************************************************************************/
 
 class RemoteRepository extends Repository {
 
@@ -65,14 +83,17 @@ class Presenter(presenterDispatcher:ActorRef) extends Actor {
 
       def handlerFuture(label:String)(response:Response):Future[RenderResponse] = {
 
-        case RedirectResponse(repository, url) => location.repository.get(url) map handlerFuture(label)
+        case RedirectResponse(repository, url) => location.repository.get(url) flatMap handlerFuture(label)
 
         case ContentResponse(kind, content) =>
 
-          // TODO: Change mapping to KIND
-          label match {
+          // TODO: We needs to move this part into content rendered.
+          // Content renderer will be determined by content kind ( and may be content class )
+          // Renderer will return future.
 
-            case "" =>
+          kind match {
+
+            case "compound" =>
               // This is "/"
               // Compound content. Needs to ask presenters to provide another parts.
 
@@ -82,6 +103,23 @@ class Presenter(presenterDispatcher:ActorRef) extends Actor {
               )
 
               val futures = subContent.foldLeft(List[Future[RenderResponse]]()) {(list, entry)=>
+
+                // For every operation we needs to have single future ith will group another two together
+                // first is the rendering future and second is timeout fallback future
+                // THINK ABOUT SETUP ANOTHER MAPPING FOR RENDERING FUTURE IN THE FALLBACK TIMEOUT FUTURE.
+                // WE CAN ADD SOME CODE WHICH WILL HANDLE RESULT AND SEND IT ASYNC ( OVER WEBSOCKET ) TO BROWSER
+                // AFTER PAGE IS RENDERED.
+
+                // TODO: How we can grab result of the late future ??
+
+                // https://github.com/twitter/util/blob/master/util-core/src/main/scala/com/twitter/util/Future.scala#L331-336
+                // https://gist.github.com/viktorklang/4488970
+
+                // Think about create Promise for answer from presenter future. Handler for answer will setup value for promise.
+                // In the timeout we can check status of the Promise or associated future and if it is not completed than
+                // setup handler for it which will grab result and send it to the AsyncRenderingCollector actor which will
+                // handle rendered content ( store or send to the websocket ).
+
                 list :+ (Future firstCompletedOf Seq(
                   presenterDispatcher ? PresentContent(entry._1, Location(location.repository, entry._2)),
                   after(FiniteDuration(3, "seconds"), context.system.scheduler) {
@@ -110,42 +148,10 @@ class Presenter(presenterDispatcher:ActorRef) extends Actor {
                 })
               }
 
-              // val pFuture1 = presenterDispatcher ? PresentContent(Location(location.repository, "/top"))
-              // val pFuture2 = presenterDispatcher ? PresentContent(Location(location.repository, "/content"))
-
-              // TODO: This is how to implement soft timeout for rendering using "after"
-              // For every operation we needs to have single future ith will group another two together
-              // first is the rendering future and second is timeout fallback future
-              // THINK ABOUT SETUP ANOTHER MAPPING FOR RENDERING FUTURE IN THE FALLBACK TIMEOUT FUTURE.
-              // WE CAN ADD SOME CODE WHICH WILL HANDLE RESULT AND SEND IT ASYNC ( OVER WEBSOCKET ) TO BROWSER
-              // AFTER PAGE IS RENDERED.
-              // val searchFuture = search(worktime)
-              // val fallback = after(timeout, context.system.scheduler) {
-              //   Future successful s"$worktime ms > $timeout"
-              // }
-              // Future firstCompletedOf Seq(searchFuture, fallback)
-
-
-              // val futures: Seq[Future[Double]] = //...
-
-              // Future.fold(futures)(0.0) {_ max _} map {maxRel =>
-              //   println(s"Max relevance: $maxRel")
-              // }
-
-            case "top" =>
+            case "simple" =>
               // Simple static content
 
-              // TODO: Needs to create and return future here ??
-
-              RenderedContent(label, "text", content.asInstanceOf[String])
-
-            case "remoteContent" =>
-              // This content is loaded async from remote repository
-
-              // TODO: Needs to create and return future here ??
-
-              RenderedContent(label, "text", content.asInstanceOf[String])
-
+              Future successful RenderedContent(label, "text", content.asInstanceOf[String])
 
           }
       }
