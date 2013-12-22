@@ -1,9 +1,14 @@
 import akka.actor.{ActorRef, Props, Actor, ActorSystem}
 import akka.pattern.ask
 import akka.pattern.{ after, ask, pipe }
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
 
-case class RenderedContent(mimeType:String, content:String)
+sealed class RenderResponse()
+
+case class RenderedContent(label:String, mimeType:String, content:String) extends RenderResponse
+
+case class RenderTimeout(label:String) extends RenderResponse
 
 sealed class Response
 
@@ -20,46 +25,93 @@ trait Repository {
 
 case class Location(repository:Repository, path:String)
 
+class RemoteRepository extends Repository {
+
+  // TODO: We may needs to define implicit "dispatcher" here.
+  // TODO: This will be usefull because this repository will needs to create future
+  def get(path: String): Future[Response] = {
+
+    path match {
+      case "id:00000000" =>
+    }
+  }
+}
+
 class OctopusRepository extends Repository {
 
   def get(path:String):Future[Response] = {
 
+    path match {
+      case "/" =>
+    }
   }
 }
 
-class RemoteRepository extends Repository {
-
-  def get(path: String): Future[Response] = {
-
-  }
-}
-
-
-case class PresentContent(location:Location)
+/**
+ *
+ * @param label       Content name in the parent container. Useful for identifying subcontent.
+ * @param location
+ */
+case class PresentContent(label: String, location:Location)
 
 class Presenter(presenterDispatcher:ActorRef) extends Actor {
 
   def receive: Actor.Receive = {
 
-    case PresentContent(location) =>
+    case PresentContent(label, location) =>
 
       // Capture sender val
       // val sender = this.sender
 
-      def handlerFuture(label:String)(response:Response) = {
+      def handlerFuture(label:String)(response:Response):Future[RenderResponse] = {
 
-        case RedirectResponse(repository, url) => location.repository.get(url) map handlerFuture("")
+        case RedirectResponse(repository, url) => location.repository.get(url) map handlerFuture(label)
 
         case ContentResponse(kind, content) =>
 
+          // TODO: Change mapping to KIND
           label match {
 
             case "" =>
               // This is "/"
               // Compound content. Needs to ask presenters to provide another parts.
 
-              val pFuture1 = presenterDispatcher ? PresentContent(Location(location.repository, "/top"))
-              val pFuture2 = presenterDispatcher ? PresentContent(Location(location.repository, "/content"))
+              val subContent = Map[String, String](
+                "top"->"/top",
+                "content"->"/content"
+              )
+
+              val futures = subContent.foldLeft(List[Future[RenderResponse]]()) {(list, entry)=>
+                list :+ (Future firstCompletedOf Seq(
+                  presenterDispatcher ? PresentContent(entry._1, Location(location.repository, entry._2)),
+                  after(FiniteDuration(3, "seconds"), context.system.scheduler) {
+                    Future successful RenderTimeout
+                  }
+                )).mapTo[RenderResponse]
+              }
+
+              // And finally we will put rendered subcontent into cells inside parent layout
+              Future.fold(futures)(Map[String, String]()) {(contentMap, response:RenderResponse)=>
+
+                response match {
+                  case RenderedContent(subContentLabel, mimeType, data) => contentMap ++ Map((subContentLabel, data))
+                  case RenderTimeout(subContentLabel) => contentMap ++ Map((subContentLabel, "Content rendering timeout"))
+                }
+
+              } map {contentMap =>
+                // Render all gathered content
+
+                RenderedContent(label, "text", contentMap.foldLeft(""){(data, entry)=>
+
+                  val contentLabel = entry._1
+                  val contentData = entry._2
+
+                  data.concat(s"<div id='$contentLabel'>$contentData</div>")
+                })
+              }
+
+              // val pFuture1 = presenterDispatcher ? PresentContent(Location(location.repository, "/top"))
+              // val pFuture2 = presenterDispatcher ? PresentContent(Location(location.repository, "/content"))
 
               // TODO: This is how to implement soft timeout for rendering using "after"
               // For every operation we needs to have single future ith will group another two together
@@ -74,32 +126,32 @@ class Presenter(presenterDispatcher:ActorRef) extends Actor {
               // Future firstCompletedOf Seq(searchFuture, fallback)
 
 
-              val futures: Seq[Future[Double]] = //...
+              // val futures: Seq[Future[Double]] = //...
 
-              Future.fold(futures)(0.0) {_ max _} map {maxRel =>
-                println(s"Max relevance: $maxRel")
-              }
+              // Future.fold(futures)(0.0) {_ max _} map {maxRel =>
+              //   println(s"Max relevance: $maxRel")
+              // }
 
             case "top" =>
               // Simple static content
 
               // TODO: Needs to create and return future here ??
 
-              RenderedContent("text", content.asInstanceOf[String])
+              RenderedContent(label, "text", content.asInstanceOf[String])
 
             case "remoteContent" =>
               // This content is loaded async from remote repository
 
               // TODO: Needs to create and return future here ??
 
-              RenderedContent("text", content.asInstanceOf[String])
+              RenderedContent(label, "text", content.asInstanceOf[String])
 
 
           }
       }
 
       val getFuture = location.repository.get(location.path)
-      getFuture map handlerFuture("") pipeTo sender
+      getFuture map handlerFuture(label) pipeTo sender
   }
 }
 
