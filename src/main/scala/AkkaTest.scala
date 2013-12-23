@@ -1,11 +1,11 @@
 
+import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Await, Promise, Future}
+
 import akka.actor._
 import akka.pattern.{ after, ask, pipe }
 import akka.routing.RoundRobinRouter
-import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Promise, Future}
 import akka.util.Timeout
 
 /****************************************************************************************************/
@@ -114,6 +114,16 @@ class OctopusRepository extends Repository {
 /****************************************************************************************************/
 
 /**
+ * Simple DI holder for testing purposes
+ */
+object DI {
+  var presenterDispatcher:ActorRef = null
+}
+
+
+/****************************************************************************************************/
+
+/**
  * Ask presenter to present ( render ) content
  *
  * @param label       Content name in the parent container. Useful for identifying subcontent.
@@ -123,11 +133,13 @@ case class PresentContent(label: String, location:Location)
 
 /****************************************************************************************************/
 
-class Presenter(presenterDispatcher:ActorRef) extends Actor {
+class Presenter extends Actor {
 
   def receive: Actor.Receive = {
 
     case PresentContent(label, location) =>
+
+      println(s"$label: Present content")
 
       // Capture sender val
       // val sender = this.sender
@@ -135,79 +147,96 @@ class Presenter(presenterDispatcher:ActorRef) extends Actor {
       import context.system
       import context.dispatcher
 
-      def handlerFuture(label: String)(response: Response): Future[RenderResponse] = {
+      location.repository.get(location.path) flatMap responseHandler(label, location.repository) pipeTo sender
+  }
 
-        response match {
+  private def responseHandler(label: String, repository:Repository)(response: Response): Future[RenderResponse] = {
 
-          case RedirectResponse(repository, url) => location.repository.get(url) flatMap handlerFuture(label)
+    import context.system
+    import context.dispatcher
 
-          case ContentResponse(kind, content: Content) =>
+    response match {
 
-            // TODO: We needs to move this part into content rendered.
-            // Content renderer will be determined by content kind ( and may be content class )
-            // Renderer will return future.
+      case RedirectResponse(redirectRepository, url) =>
 
-            val futures = content.subContent.foldLeft(List[Future[RenderResponse]]()) {
-              (list, entry) =>
+        println(s"$label: Redirect response received: $url")
 
-              // For every operation we needs to have single future ith will group another two together
-              // first is the rendering future and second is timeout fallback future
-              // THINK ABOUT SETUP ANOTHER MAPPING FOR RENDERING FUTURE IN THE FALLBACK TIMEOUT FUTURE.
-              // WE CAN ADD SOME CODE WHICH WILL HANDLE RESULT AND SEND IT ASYNC ( OVER WEBSOCKET ) TO BROWSER
-              // AFTER PAGE IS RENDERED.
+        redirectRepository.get(url) flatMap responseHandler(label, redirectRepository)
 
-              // TODO: How we can grab result of the late future ??
+      case ContentResponse(kind, content: Content) =>
 
-              // https://github.com/twitter/util/blob/master/util-core/src/main/scala/com/twitter/util/Future.scala#L331-336
-              // https://gist.github.com/viktorklang/4488970
+        println(s"$label: Content response received")
 
-              // Think about create Promise for answer from presenter future. Handler for answer will setup value for promise.
-              // In the timeout we can check status of the Promise or associated future and if it is not completed than
-              // setup handler for it which will grab result and send it to the AsyncRenderingCollector actor which will
-              // handle rendered content ( store or send to the websocket ).
+        // TODO: We needs to move this part into content rendered.
+        // Content renderer will be determined by content kind ( and may be content class )
+        // Renderer will return future.
 
-              // Another possible implementation - always send rendering results to the special actor, also send
-              // timeout message. If timeout message will arrive before content message - content will be scheduled
-              // for delivery to the client over websocket.
+        val futures = content.subContent.foldLeft(List[Future[RenderResponse]]()) {
+          (list, entry) =>
 
-                import context.dispatcher
-                implicit val timeout = Timeout(3 seconds)
+          // For every operation we needs to have single future ith will group another two together
+          // first is the rendering future and second is timeout fallback future
+          // THINK ABOUT SETUP ANOTHER MAPPING FOR RENDERING FUTURE IN THE FALLBACK TIMEOUT FUTURE.
+          // WE CAN ADD SOME CODE WHICH WILL HANDLE RESULT AND SEND IT ASYNC ( OVER WEBSOCKET ) TO BROWSER
+          // AFTER PAGE IS RENDERED.
 
-                list :+ (Future firstCompletedOf Seq(
-                  presenterDispatcher ? PresentContent(entry._1, Location(location.repository, entry._2)),
-                  after(FiniteDuration(3, "seconds"), context.system.scheduler) {
-                    Future successful RenderTimeout
-                  }
-                )).mapTo[RenderResponse]
-            }
+          // TODO: How we can grab result of the late future ??
 
-            // And finally we will put rendered subcontent into cells inside parent layout
-            Future.fold(futures)(Map[String, String]()) {
-              (contentMap, response: RenderResponse) =>
+          // https://github.com/twitter/util/blob/master/util-core/src/main/scala/com/twitter/util/Future.scala#L331-336
+          // https://gist.github.com/viktorklang/4488970
 
-                response match {
-                  case RenderedContent(subContentLabel, mimeType, data) => contentMap ++ Map((subContentLabel, data))
-                  case RenderTimeout(subContentLabel) => contentMap ++ Map((subContentLabel, "Content rendering timeout"))
-                }
+          // Think about create Promise for answer from presenter future. Handler for answer will setup value for promise.
+          // In the timeout we can check status of the Promise or associated future and if it is not completed than
+          // setup handler for it which will grab result and send it to the AsyncRenderingCollector actor which will
+          // handle rendered content ( store or send to the websocket ).
 
-            } map {
-              contentMap =>
-              // Render all gathered content ( will render template is the real system here )
+          // Another possible implementation - always send rendering results to the special actor, also send
+          // timeout message. If timeout message will arrive before content message - content will be scheduled
+          // for delivery to the client over websocket.
 
-                RenderedContent(label, "text", contentMap.foldLeft(content.content) {
-                  (data, entry) =>
+            import context.dispatcher
+            implicit val timeout = Timeout(4 seconds)
 
-                    val contentLabel = entry._1
-                    val contentData = entry._2
+            val subContentLabel = entry._1
+            val subContentUrl = entry._2
 
-                    data.concat(s"<div id='$contentLabel'>$contentData</div>")
-                })
-            }
+            println(s"Request subcontent:$subContentLabel url:$subContentUrl")
+
+            list :+ (Future firstCompletedOf Seq(
+              DI.presenterDispatcher ? PresentContent(subContentLabel, Location(repository, subContentUrl)),
+              after(FiniteDuration(3, "seconds"), context.system.scheduler) {
+                Future successful RenderTimeout
+              }
+            )).mapTo[RenderResponse]
         }
-      }
 
-      val getFuture = location.repository.get(location.path)
-      getFuture map handlerFuture(label) pipeTo sender
+        // And finally we will put rendered subcontent into cells inside parent layout
+        Future.fold(futures)(Map[String, String]()) {
+          (contentMap, response: RenderResponse) =>
+
+            println(s"$label: Got response for subcontent $response")
+
+            response match {
+              case RenderedContent(subContentLabel, mimeType, data) => contentMap ++ Map((subContentLabel, data))
+              case RenderTimeout(subContentLabel) => contentMap ++ Map((subContentLabel, "Content rendering timeout"))
+            }
+
+        } map {
+          contentMap =>
+          // Render all gathered content ( will render template is the real system here )
+
+            println(s"$label: Final rendering")
+
+            RenderedContent(label, "text", contentMap.foldLeft(content.content) {
+              (data, entry) =>
+
+                val contentLabel = entry._1
+                val contentData = entry._2
+
+                data.concat(s"<div id='$contentLabel'>$contentData</div>")
+            })
+        }
+    }
   }
 }
 
@@ -222,17 +251,24 @@ object AkkaTest extends App {
   val system = ActorSystem("akkaTest")
 
   val presentersRouter:ActorRef = system.actorOf(Props.empty.withRouter(RoundRobinRouter(routees = List[ActorRef](
-    system.actorOf(Props(classOf[Presenter], presentersRouter)),
-    system.actorOf(Props(classOf[Presenter], presentersRouter)),
-    system.actorOf(Props(classOf[Presenter], presentersRouter)),
-    system.actorOf(Props(classOf[Presenter], presentersRouter))
+    system.actorOf(Props(classOf[Presenter])),
+    system.actorOf(Props(classOf[Presenter])),
+    system.actorOf(Props(classOf[Presenter])),
+    system.actorOf(Props(classOf[Presenter]))
   ))))
 
-  implicit val timeout = Timeout(30 seconds)
+  DI.presenterDispatcher = presentersRouter
+
+  implicit val timeout = Timeout(300 seconds)
   import system.dispatcher
 
-  presentersRouter ? PresentContent("root", Location(new OctopusRepository(), "/")) onComplete(result=> {
-    result
-  })
+  val result = Await.result(presentersRouter ? PresentContent("root", Location(new OctopusRepository(), "/")), 300 seconds)
+
+  println(s"Got final result $result ")
+
+
+  // presentersRouter ? PresentContent("root", Location(new OctopusRepository(), "/")) onComplete(result=> {
+  //  result
+  // })
 
 }
