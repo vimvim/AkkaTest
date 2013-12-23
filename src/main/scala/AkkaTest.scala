@@ -101,7 +101,7 @@ class RemoteRepository extends Repository {
 
         import akkaSystem.dispatcher
 
-        Right(after(FiniteDuration(1, "seconds"), akkaSystem.scheduler) {
+        Right(after(FiniteDuration(0, "seconds"), akkaSystem.scheduler) {
           Future successful ContentResponse("",
             Content(
               Map[String, String](),
@@ -115,7 +115,7 @@ class RemoteRepository extends Repository {
 
         import akkaSystem.dispatcher
 
-        Right(after(FiniteDuration(10, "seconds"), akkaSystem.scheduler) {
+        Right(after(FiniteDuration(0, "seconds"), akkaSystem.scheduler) {
           Future successful ContentResponse("",
             Content(
               Map[String, String](),
@@ -453,16 +453,16 @@ object AkkaTest extends App {
   implicit val timeout = Timeout(300 seconds)
   import system.dispatcher
 
-  // for(i <- 1 to 10) {
+  for(i <- 1 to 10) {
 
-    Tracer.start(true)
+    Tracer.start(false)
 
     val result = Await.result(presentersRouter ? PresentContent("root", Location(new OctopusRepository(), "/")), 300 seconds)
 
     Tracer.finish()
 
     println(s"Got final result $result ")
-  // }
+  }
 
   // presentersRouter ? PresentContent("root", Location(new OctopusRepository(), "/")) onComplete(result=> {
   //  result
