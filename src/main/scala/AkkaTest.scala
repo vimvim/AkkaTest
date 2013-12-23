@@ -352,10 +352,28 @@ class Presenter extends Actor {
 
           Tracer.log(s"Request subcontent:$subContentLabel url:$subContentUrl")
 
+          val renderingFuture = DI.presenterDispatcher ? PresentContent(subContentLabel, Location(repository, subContentUrl))
+
+          @volatile var timedOut = false
+
           list :+ (Future firstCompletedOf Seq(
-            DI.presenterDispatcher ? PresentContent(subContentLabel, Location(repository, subContentUrl)),
+            renderingFuture map {response=>
+
+              if (timedOut) {
+                // lateDeliveryActor ! response
+                Tracer.log(s"$subContentLabel Rendered too late. Send for async delivery. ")
+              }
+
+              response
+            },
             after(FiniteDuration(3, "seconds"), context.system.scheduler) {
-              Future successful RenderTimeout(subContentLabel)
+
+              Future {
+                timedOut = true
+                RenderTimeout(subContentLabel)
+              }
+
+              // Future successful RenderTimeout(subContentLabel)
             }
           )).mapTo[RenderResponse]
       }
@@ -435,7 +453,7 @@ object AkkaTest extends App {
   implicit val timeout = Timeout(300 seconds)
   import system.dispatcher
 
-  for(i <- 1 to 10) {
+  // for(i <- 1 to 10) {
 
     Tracer.start(true)
 
@@ -444,7 +462,7 @@ object AkkaTest extends App {
     Tracer.finish()
 
     println(s"Got final result $result ")
-  }
+  // }
 
   // presentersRouter ? PresentContent("root", Location(new OctopusRepository(), "/")) onComplete(result=> {
   //  result
