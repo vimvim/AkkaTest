@@ -1,4 +1,5 @@
 
+import scala._
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Await, Promise, Future}
@@ -100,7 +101,7 @@ class RemoteRepository extends Repository {
 
         import akkaSystem.dispatcher
 
-        Right(after(FiniteDuration(0, "seconds"), akkaSystem.scheduler) {
+        Right(after(FiniteDuration(1, "seconds"), akkaSystem.scheduler) {
           Future successful ContentResponse("",
             Content(
               Map[String, String](),
@@ -114,7 +115,7 @@ class RemoteRepository extends Repository {
 
         import akkaSystem.dispatcher
 
-        Right(after(FiniteDuration(0, "seconds"), akkaSystem.scheduler) {
+        Right(after(FiniteDuration(10, "seconds"), akkaSystem.scheduler) {
           Future successful ContentResponse("",
             Content(
               Map[String, String](),
@@ -217,24 +218,63 @@ class Presenter extends Actor {
       import context.system
       import context.dispatcher
 
-      location.repository.get(location.path) match {
+      renderContent(label, location.repository, location.path) match {
+        case Left(renderedContent) => sender ! renderedContent
+        case Right(future) => future pipeTo sender
+      }
+  }
+
+  private def renderContent(label: String, repository:Repository, path:String):Either[RenderedContent, Future[RenderedContent]] = {
+
+    import context.system
+    import context.dispatcher
+
+    getContent(label, repository, path) match {
+
+      case Left(contentResponse) => render(repository, label, "", contentResponse.content.asInstanceOf[Content])
+
+      case Right(getFuture) => Right(getFuture flatMap {
+        contentResponse=>
+
+        render(repository, label, "", contentResponse.content.asInstanceOf[Content]) match {
+          case Left(renderedContent) => Future.successful[RenderedContent](renderedContent)
+          case Right(renderFuture) => renderFuture
+        }
+      })
+    }
+  }
+
+  private def getContent(label: String, repository:Repository, path:String): Either[ContentResponse[_], Future[ContentResponse[_]]] = {
+
+    import context.system
+    import context.dispatcher
+
+    def handleAnswer(answer: Either[Response, Future[Response]]):Either[ContentResponse[_], Future[ContentResponse[_]]] = {
+
+      answer match {
 
         case Left(response) =>
 
           response match {
-            case redirectResponse:RedirectResponse => responseHandler(label, location.repository)(response) pipeTo sender
-            case contentResponse:ContentResponse[Content] =>
-
-              render(location.repository, label, contentResponse.kind, contentResponse.content) match {
-                case Left(content) => sender ! content
-                case Right(future) => future pipeTo sender
-              }
+            case redirectResponse:RedirectResponse => handleAnswer(redirectResponse.repository.get(redirectResponse.path))
+            case contentResponse:ContentResponse[_] => Left(contentResponse)
           }
 
-        case Right(future) => future flatMap responseHandler(label, location.repository) pipeTo sender
+        case Right(future) =>
+
+          // TODO: There will be problem if content repository will return Future[RedirectResponse]]
+
+          Right(future.asInstanceOf[Future[ContentResponse[_]]])
       }
+    }
+
+    handleAnswer(repository.get(path))
   }
 
+  /****************************************************************************************************************/
+
+
+  /*
   private def responseHandler(label: String, repository:Repository)(response: Response): Future[RenderResponse] = {
 
     import context.system
@@ -271,6 +311,7 @@ class Presenter extends Actor {
         }
     }
   }
+  */
 
   private def render(repository: Repository, label: String, kind: String, content: Content): Either[RenderedContent, Future[RenderedContent]] = {
 
