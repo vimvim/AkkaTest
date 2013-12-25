@@ -330,7 +330,7 @@ class Presenter extends Actor {
         // WE CAN ADD SOME CODE WHICH WILL HANDLE RESULT AND SEND IT ASYNC ( OVER WEBSOCKET ) TO BROWSER
         // AFTER PAGE IS RENDERED.
 
-        // TODO: How we can grab result of the late future ??
+        // TODO: How we can grab result of the late future ??  RESOLVED BELOW \/
 
         // https://github.com/twitter/util/blob/master/util-core/src/main/scala/com/twitter/util/Future.scala#L331-336
         // https://gist.github.com/viktorklang/4488970
