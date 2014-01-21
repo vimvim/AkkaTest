@@ -1,8 +1,8 @@
 package rtmp
 
 import javax.crypto.spec.{DHPublicKeySpec, DHParameterSpec, SecretKeySpec}
-import java.security.{PublicKey, KeyFactory, KeyPairGenerator, KeyPair}
-import javax.crypto.KeyAgreement
+import java.security._
+import javax.crypto.{Mac, KeyAgreement}
 import javax.crypto.interfaces.DHPublicKey
 import java.math.BigInteger
 import java.security.spec.KeySpec
@@ -24,6 +24,12 @@ object Handshake {
 
   /** Modulus bytes from flazr */
   protected final val DH_MODULUS_BYTES: Array[Byte] = Array(0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xc9.asInstanceOf[Byte], 0x0f.asInstanceOf[Byte], 0xda.asInstanceOf[Byte], 0xa2.asInstanceOf[Byte], 0x21.asInstanceOf[Byte], 0x68.asInstanceOf[Byte], 0xc2.asInstanceOf[Byte], 0x34.asInstanceOf[Byte], 0xc4.asInstanceOf[Byte], 0xc6.asInstanceOf[Byte], 0x62.asInstanceOf[Byte], 0x8b.asInstanceOf[Byte], 0x80.asInstanceOf[Byte], 0xdc.asInstanceOf[Byte], 0x1c.asInstanceOf[Byte], 0xd1.asInstanceOf[Byte], 0x29.asInstanceOf[Byte], 0x02.asInstanceOf[Byte], 0x4e.asInstanceOf[Byte], 0x08.asInstanceOf[Byte], 0x8a.asInstanceOf[Byte], 0x67.asInstanceOf[Byte], 0xcc.asInstanceOf[Byte], 0x74.asInstanceOf[Byte], 0x02.asInstanceOf[Byte], 0x0b.asInstanceOf[Byte], 0xbe.asInstanceOf[Byte], 0xa6.asInstanceOf[Byte], 0x3b.asInstanceOf[Byte], 0x13.asInstanceOf[Byte], 0x9b.asInstanceOf[Byte], 0x22.asInstanceOf[Byte], 0x51.asInstanceOf[Byte], 0x4a.asInstanceOf[Byte], 0x08.asInstanceOf[Byte], 0x79.asInstanceOf[Byte], 0x8e.asInstanceOf[Byte], 0x34.asInstanceOf[Byte], 0x04.asInstanceOf[Byte], 0xdd.asInstanceOf[Byte], 0xef.asInstanceOf[Byte], 0x95.asInstanceOf[Byte], 0x19.asInstanceOf[Byte], 0xb3.asInstanceOf[Byte], 0xcd.asInstanceOf[Byte], 0x3a.asInstanceOf[Byte], 0x43.asInstanceOf[Byte], 0x1b.asInstanceOf[Byte], 0x30.asInstanceOf[Byte], 0x2b.asInstanceOf[Byte], 0x0a.asInstanceOf[Byte], 0x6d.asInstanceOf[Byte], 0xf2.asInstanceOf[Byte], 0x5f.asInstanceOf[Byte], 0x14.asInstanceOf[Byte], 0x37.asInstanceOf[Byte], 0x4f.asInstanceOf[Byte], 0xe1.asInstanceOf[Byte], 0x35.asInstanceOf[Byte], 0x6d.asInstanceOf[Byte], 0x6d.asInstanceOf[Byte], 0x51.asInstanceOf[Byte], 0xc2.asInstanceOf[Byte], 0x45.asInstanceOf[Byte], 0xe4.asInstanceOf[Byte], 0x85.asInstanceOf[Byte], 0xb5.asInstanceOf[Byte], 0x76.asInstanceOf[Byte], 0x62.asInstanceOf[Byte], 0x5e.asInstanceOf[Byte], 0x7e.asInstanceOf[Byte], 0xc6.asInstanceOf[Byte], 0xf4.asInstanceOf[Byte], 0x4c.asInstanceOf[Byte], 0x42.asInstanceOf[Byte], 0xe9.asInstanceOf[Byte], 0xa6.asInstanceOf[Byte], 0x37.asInstanceOf[Byte], 0xed.asInstanceOf[Byte], 0x6b.asInstanceOf[Byte], 0x0b.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0x5c.asInstanceOf[Byte], 0xb6.asInstanceOf[Byte], 0xf4.asInstanceOf[Byte], 0x06.asInstanceOf[Byte], 0xb7.asInstanceOf[Byte], 0xed.asInstanceOf[Byte], 0xee.asInstanceOf[Byte], 0x38.asInstanceOf[Byte], 0x6b.asInstanceOf[Byte], 0xfb.asInstanceOf[Byte], 0x5a.asInstanceOf[Byte], 0x89.asInstanceOf[Byte], 0x9f.asInstanceOf[Byte], 0xa5.asInstanceOf[Byte], 0xae.asInstanceOf[Byte], 0x9f.asInstanceOf[Byte], 0x24.asInstanceOf[Byte], 0x11.asInstanceOf[Byte], 0x7c.asInstanceOf[Byte], 0x4b.asInstanceOf[Byte], 0x1f.asInstanceOf[Byte], 0xe6.asInstanceOf[Byte], 0x49.asInstanceOf[Byte], 0x28.asInstanceOf[Byte], 0x66.asInstanceOf[Byte], 0x51.asInstanceOf[Byte], 0xec.asInstanceOf[Byte], 0xe6.asInstanceOf[Byte], 0x53.asInstanceOf[Byte], 0x81.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte], 0xff.asInstanceOf[Byte])
+
+  protected final val DH_MODULUS: BigInteger = new BigInteger(1, DH_MODULUS_BYTES)
+
+  protected final val DH_BASE: BigInteger = BigInteger.valueOf(2)
+
+  val hmacSHA256 = Mac.getInstance("HmacSHA256")
 
   def validateScheme(pBuffer: Array[Byte], scheme: Int): Boolean = {
 
@@ -70,17 +76,18 @@ object Handshake {
    * @return hmac hashed bytes
    */
   def calculateHMAC_SHA256(input: Array[Byte], key: Array[Byte]): Array[Byte] = {
+
     var output: Array[Byte] = null
     try {
       hmacSHA256.init(new SecretKeySpec(key, "HmacSHA256"))
       output = hmacSHA256.doFinal(input)
-    }
-    catch {
+    } catch {
       case e: InvalidKeyException => {
         log.error("Invalid key", e)
       }
     }
-    return output
+
+    output
   }
 
   /**
@@ -92,17 +99,19 @@ object Handshake {
    * @return hmac hashed bytes
    */
   def calculateHMAC_SHA256(input: Array[Byte], key: Array[Byte], length: Int): Array[Byte] = {
+
     var output: Array[Byte] = null
+
     try {
       hmacSHA256.init(new SecretKeySpec(key, 0, length, "HmacSHA256"))
       output = hmacSHA256.doFinal(input)
-    }
-    catch {
+    } catch {
       case e: InvalidKeyException => {
         log.error("Invalid key", e)
       }
     }
-    return output
+
+    output
   }
 
   /**
@@ -111,21 +120,23 @@ object Handshake {
    * @return dh keypair
    */
   protected def generateKeyPair: KeyPair = {
+
     var keyPair: KeyPair = null
     val keySpec: DHParameterSpec = new DHParameterSpec(DH_MODULUS, DH_BASE)
+
     try {
       val keyGen: KeyPairGenerator = KeyPairGenerator.getInstance("DH")
       keyGen.initialize(keySpec)
       keyPair = keyGen.generateKeyPair
       keyAgreement = KeyAgreement.getInstance("DH")
       keyAgreement.init(keyPair.getPrivate)
-    }
-    catch {
+    } catch {
       case e: Exception => {
         log.error("Error generating keypair", e)
       }
     }
-    return keyPair
+
+    keyPair
   }
 
   /**
@@ -135,23 +146,31 @@ object Handshake {
    * @return public key
    */
   protected def getPublicKey(keyPair: KeyPair): Array[Byte] = {
+
     val incomingPublicKey: DHPublicKey = keyPair.getPublic.asInstanceOf[DHPublicKey]
     val dhY: BigInteger = incomingPublicKey.getY
+
     log.debug("Public key: {}", dhY)
+
     var result: Array[Byte] = dhY.toByteArray
     log.debug("Public key as bytes - length [{}]: {}", result.length, Hex.encodeHexString(result))
+
     val temp: Array[Byte] = new Array[Byte](KEY_LENGTH)
     if (result.length < KEY_LENGTH) {
+
       System.arraycopy(result, 0, temp, KEY_LENGTH - result.length, result.length)
       result = temp
+
       log.debug("Padded public key length to 128")
-    }
-    else if (result.length > KEY_LENGTH) {
+    } else if (result.length > KEY_LENGTH) {
+
       System.arraycopy(result, result.length - KEY_LENGTH, temp, 0, KEY_LENGTH)
       result = temp
+
       log.debug("Truncated public key length to 128")
     }
-    return result
+
+    result
   }
 
   /**
@@ -162,21 +181,25 @@ object Handshake {
    * @return shared secret bytes if client used a supported validation scheme
    */
   protected def getSharedSecret(otherPublicKeyBytes: Array[Byte], agreement: KeyAgreement): Array[Byte] = {
+
     val otherPublicKeyInt: BigInteger = new BigInteger(1, otherPublicKeyBytes)
+
     try {
       val keyFactory: KeyFactory = KeyFactory.getInstance("DH")
-      val otherPublicKeySpec: KeySpec = new DHPublicKeySpec(otherPublicKeyInt, RTMPHandshake.DH_MODULUS, RTMPHandshake.DH_BASE)
+      val otherPublicKeySpec: KeySpec = new DHPublicKeySpec(otherPublicKeyInt, DH_MODULUS, DH_BASE)
       val otherPublicKey: PublicKey = keyFactory.generatePublic(otherPublicKeySpec)
       agreement.doPhase(otherPublicKey, true)
-    }
-    catch {
+    } catch {
       case e: Exception => {
         log.error("Exception getting the shared secret", e)
       }
     }
+
     val sharedSecret: Array[Byte] = agreement.generateSecret
+
     log.debug("Shared secret [{}]: {}", sharedSecret.length, Hex.encodeHexString(sharedSecret))
-    return sharedSecret
+
+    sharedSecret
   }
 
   /**
@@ -186,17 +209,24 @@ object Handshake {
    * @return DH offset
    */
   protected def getDHOffset(bytes: Array[Byte]): Int = {
+
     var dhOffset: Int = -1
+
     validationScheme match {
+
+      case 0 =>
+        dhOffset = getDHOffset0(bytes)
+
       case 1 =>
         dhOffset = getDHOffset1(bytes)
         break //todo: break is not supported
+
       case _ =>
         log.debug("Scheme 0 will be used for DH offset")
-      case 0 =>
-        dhOffset = getDHOffset0(bytes)
+
     }
-    return dhOffset
+
+    dhOffset
   }
 
   /**
@@ -205,13 +235,16 @@ object Handshake {
    * @return dh offset
    */
   protected def getDHOffset0(bytes: Array[Byte]): Int = {
+
     var offset: Int = (bytes(1532) & 0x0ff) + (bytes(1533) & 0x0ff) + (bytes(1534) & 0x0ff) + (bytes(1535) & 0x0ff)
     offset = offset % 632
     offset = offset + 772
+
     if (offset + KEY_LENGTH >= 1536) {
       log.error("Invalid DH offset")
     }
-    return offset
+
+    offset
   }
 
   /**
@@ -220,13 +253,16 @@ object Handshake {
    * @return dh offset
    */
   protected def getDHOffset1(bytes: Array[Byte]): Int = {
+
     var offset: Int = (bytes(768) & 0x0ff) + (bytes(769) & 0x0ff) + (bytes(770) & 0x0ff) + (bytes(771) & 0x0ff)
     offset = offset % 632
     offset = offset + 8
+
     if (offset + KEY_LENGTH >= 1536) {
       log.error("Invalid DH offset")
     }
-    return offset
+
+    offset
   }
 
   /**
@@ -236,17 +272,19 @@ object Handshake {
    * @return digest offset
    */
   protected def getDigestOffset(pBuffer: Array[Byte]): Int = {
+
     var serverDigestOffset: Int = -1
+
     validationScheme match {
-      case 1 =>
-        serverDigestOffset = getDigestOffset1(pBuffer)
-        break //todo: break is not supported
-      case _ =>
-        log.debug("Scheme 0 will be used for DH offset")
       case 0 =>
         serverDigestOffset = getDigestOffset0(pBuffer)
+      case 1 =>
+        serverDigestOffset = getDigestOffset1(pBuffer)
+      case _ =>
+        log.debug("Scheme 0 will be used for DH offset")
     }
-    return serverDigestOffset
+
+    serverDigestOffset
   }
 
   /**
@@ -256,16 +294,20 @@ object Handshake {
    * @return digest offset
    */
   protected def getDigestOffset0(pBuffer: Array[Byte]): Int = {
+
     if (log.isTraceEnabled) {
-      log.trace("Scheme 0 offset bytes {},{},{},{}", Array[AnyRef]((pBuffer(8) & 0x0ff), (pBuffer(9) & 0x0ff), (pBuffer(10) & 0x0ff), (pBuffer(11) & 0x0ff)))
+      log.trace("Scheme 0 offset bytes {},{},{},{}", Array[Int](pBuffer(8) & 0x0ff, pBuffer(9) & 0x0ff, pBuffer(10) & 0x0ff, pBuffer(11) & 0x0ff))
     }
+
     var offset: Int = (pBuffer(8) & 0x0ff) + (pBuffer(9) & 0x0ff) + (pBuffer(10) & 0x0ff) + (pBuffer(11) & 0x0ff)
     offset = offset % 728
     offset = offset + 12
+
     if (offset + DIGEST_LENGTH >= 1536) {
       log.error("Invalid digest offset")
     }
-    return offset
+
+    offset
   }
 
   /**
@@ -275,15 +317,19 @@ object Handshake {
    * @return digest offset
    */
   protected def getDigestOffset1(pBuffer: Array[Byte]): Int = {
+
     if (log.isTraceEnabled) {
-      log.trace("Scheme 1 offset bytes {},{},{},{}", Array[AnyRef]((pBuffer(772) & 0x0ff), (pBuffer(773) & 0x0ff), (pBuffer(774) & 0x0ff), (pBuffer(775) & 0x0ff)))
+      log.trace("Scheme 1 offset bytes {},{},{},{}", Array[Int](pBuffer(772) & 0x0ff, pBuffer(773) & 0x0ff, pBuffer(774) & 0x0ff, pBuffer(775) & 0x0ff))
     }
+
     var offset: Int = (pBuffer(772) & 0x0ff) + (pBuffer(773) & 0x0ff) + (pBuffer(774) & 0x0ff) + (pBuffer(775) & 0x0ff)
     offset = offset % 728
     offset = offset + 776
+
     if (offset + DIGEST_LENGTH >= 1536) {
       log.error("Invalid digest offset")
     }
-    return offset
+
+    offset
   }
 }
