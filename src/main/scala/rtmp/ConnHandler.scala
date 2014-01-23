@@ -27,7 +27,6 @@ class ConnHandler extends Actor with FSM[State, Data] {
 
   import Tcp._
 
-
   startWith(HandshakeGet, Uninitialized)
 
   when(HandshakeGet) {
@@ -36,6 +35,8 @@ class ConnHandler extends Actor with FSM[State, Data] {
       // if (!data.isCompact) {
       //  data.compact
       // }
+
+      log.isDebugEnabled
 
       // TODO: Check is there are new byte buffers is created. We needs to eliminate this.
       val compactData = data.compact
