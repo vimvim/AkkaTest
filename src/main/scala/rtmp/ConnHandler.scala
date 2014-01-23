@@ -18,7 +18,7 @@ case object ClosedConn extends State
 
 sealed trait Data
 case object Uninitialized extends Data
-case object Handshake extends Data
+case object HandshakeData extends Data
 
 /**
  *
@@ -41,17 +41,7 @@ class ConnHandler extends Actor with FSM[State, Data] {
       val compactData = data.compact
       val bytes = compactData.asByteBuffer.array()
 
-      val handshakeType = bytes(0)
-      val versionByte = bytes(4)
 
-      if (log.isDebugEnabled) {
-
-        log.debug("Player encryption byte: {}", handshakeType)
-        log.debug("Player version byte: {}", versionByte & 0x0ff)
-
-        //if the 5th byte is 0 then dont generate new-style handshake
-        log.debug("Detecting flash player version {},{},{},{}", Array[Int](bytes(4) & 0x0ff, bytes(5) & 0x0ff, bytes(6) & 0x0ff, bytes(7) & 0x0ff))
-      }
 
 
 
