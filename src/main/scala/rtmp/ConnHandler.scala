@@ -36,14 +36,16 @@ class ConnHandler extends Actor with FSM[State, Data] {
       //  data.compact
       // }
 
-      log.isDebugEnabled
+      // log.isDebugEnabled
 
       // TODO: Check is there are new byte buffers is created. We needs to eliminate this.
       val compactData = data.compact
       val bytes = compactData.asByteBuffer.array()
 
+      val resp = new HandshakeResponse(bytes)
 
-
+      // TODO: How we will test this ??? Do we needs to create separated Protocol Actor ??
+      Write(resp.output)
 
 
 

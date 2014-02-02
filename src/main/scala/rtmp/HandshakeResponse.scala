@@ -5,23 +5,25 @@ import java.nio.ByteBuffer
 import scala.Exception
 import java.security.KeyPair
 import java.util.logging.{Level, Logger}
+import akka.event.LoggingAdapter
+import akka.util.{ByteStringBuilder, ByteString}
 
 
 /**
  *
  */
-class HandshakeResponse(input:Array[Byte]) {
+class HandshakeResponse(input:Array[Byte])(implicit val log:LoggingAdapter) {
 
   val log = Logger.getLogger(classOf[HandshakeResponse].getCanonicalName)
 
   protected final val random: Random = new Random
 
-  val output = ByteBuffer.allocateDirect(Handshake.HANDSHAKE_SIZE_SERVER)
+  // val output = ByteBuffer.allocateDirect(Handshake.HANDSHAKE_SIZE_SERVER)
+  val output = new ByteStringBuilder()
+
 
   val handshakeType = input(0)
   val versionByte = input(4)
-
-  log.isLoggable(Level.)
 
   if (log.isDebugEnabled) {
 
@@ -60,7 +62,7 @@ class HandshakeResponse(input:Array[Byte]) {
     log.debug(s"Valid RTMP client detected. Validation scheme: ${validationScheme.id}")
 
     val clientDHOffset: Int = validationScheme.getDHOffset(input)
-    log.trace("Incoming DH offset: {}", clientDHOffset)
+    log.debug("Incoming DH offset: {}", clientDHOffset)
 
     // Get the clients public key
     val outgoingPublicKey = new Array[Byte](Handshake.KEY_LENGTH)
@@ -91,7 +93,7 @@ class HandshakeResponse(input:Array[Byte]) {
 
     //get the servers dh offset
     val serverDHOffset: Int = validationScheme.getDHOffset(handshakeBytes)
-    log.trace("Outgoing DH offset: {}", serverDHOffset)
+    log.debug("Outgoing DH offset: {}", serverDHOffset)
 
 
     // Create handshake response and add public key to it
