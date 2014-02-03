@@ -1,9 +1,9 @@
-package rtmp
+package rtmp.protocol.v2.handshake
 
 /**
  *
  */
-abstract class HandshakeValidationScheme {
+abstract class ValidationScheme {
 
   /**
    * Validate current scheme against passed data
@@ -18,16 +18,16 @@ abstract class HandshakeValidationScheme {
 
     // log.debug("Scheme: {} client digest offset: {}", scheme, digestOffset)
 
-    val tempBuffer: Array[Byte] = new Array[Byte](Handshake.HANDSHAKE_SIZE - Handshake.DIGEST_LENGTH)
+    val tempBuffer: Array[Byte] = new Array[Byte](Constants.HANDSHAKE_SIZE - Constants.DIGEST_LENGTH)
     System.arraycopy(input, 0, tempBuffer, 0, digestOffset)
-    System.arraycopy(input, digestOffset + Handshake.DIGEST_LENGTH, tempBuffer, digestOffset, Handshake.HANDSHAKE_SIZE - digestOffset - Handshake.DIGEST_LENGTH)
+    System.arraycopy(input, digestOffset + Constants.DIGEST_LENGTH, tempBuffer, digestOffset, Constants.HANDSHAKE_SIZE - digestOffset - Constants.DIGEST_LENGTH)
 
-    val tempHash: Array[Byte] = Handshake.calculateHMAC_SHA256(tempBuffer, Handshake.GENUINE_FP_KEY, 30)
+    val tempHash: Array[Byte] = Crypto.calculateHMAC_SHA256(tempBuffer, Constants.GENUINE_FP_KEY, 30)
 
     // log.debug("Temp: {}", Hex.encodeHexString(tempHash))
 
     var i: Int = 0
-    while (i < Handshake.DIGEST_LENGTH) {
+    while (i < Constants.DIGEST_LENGTH) {
 
       if (input(digestOffset + i) != tempHash(i)) {
         return false

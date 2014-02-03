@@ -1,9 +1,11 @@
-package rtmp
+package rtmp.protocol.v2.handshake
+
+import akka.event.LoggingAdapter
 
 /**
  *
  */
-class HandshakeValidationScheme0 extends HandshakeValidationScheme {
+class ValidationScheme0(implicit val log:LoggingAdapter) extends ValidationScheme {
 
   /**
    * Returns the DH byte offset.
@@ -16,7 +18,7 @@ class HandshakeValidationScheme0 extends HandshakeValidationScheme {
     offset = offset % 632
     offset = offset + 772
 
-    if (offset + Handshake.KEY_LENGTH >= 1536) {
+    if (offset + Constants.KEY_LENGTH >= 1536) {
       log.error("Invalid DH offset")
     }
 
@@ -31,20 +33,18 @@ class HandshakeValidationScheme0 extends HandshakeValidationScheme {
    */
   protected def getDigestOffset(pBuffer: Array[Byte]): Int = {
 
-    if (log.isTraceEnabled) {
-      log.trace("Scheme 0 offset bytes {},{},{},{}", Array[Int](pBuffer(8) & 0x0ff, pBuffer(9) & 0x0ff, pBuffer(10) & 0x0ff, pBuffer(11) & 0x0ff))
+    if (log.isDebugEnabled) {
+      log.debug("Scheme 0 offset bytes {},{},{},{}", Array[Int](pBuffer(8) & 0x0ff, pBuffer(9) & 0x0ff, pBuffer(10) & 0x0ff, pBuffer(11) & 0x0ff))
     }
 
     var offset: Int = (pBuffer(8) & 0x0ff) + (pBuffer(9) & 0x0ff) + (pBuffer(10) & 0x0ff) + (pBuffer(11) & 0x0ff)
     offset = offset % 728
     offset = offset + 12
 
-    if (offset + Handshake.DIGEST_LENGTH >= 1536) {
+    if (offset + Constants.DIGEST_LENGTH >= 1536) {
       log.error("Invalid digest offset")
     }
 
     offset
   }
-
-
 }
