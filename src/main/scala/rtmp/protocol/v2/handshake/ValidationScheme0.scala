@@ -5,7 +5,7 @@ import akka.event.LoggingAdapter
 /**
  *
  */
-class ValidationScheme0(implicit val log:LoggingAdapter) extends ValidationScheme {
+class ValidationScheme0(implicit val log:LoggingAdapter) extends ValidationScheme(0) {
 
   /**
    * Returns the DH byte offset.
@@ -31,7 +31,7 @@ class ValidationScheme0(implicit val log:LoggingAdapter) extends ValidationSchem
    * @param pBuffer source for digest data
    * @return digest offset
    */
-  protected def getDigestOffset(pBuffer: Array[Byte]): Int = {
+  def getDigestOffset(pBuffer: Array[Byte]): Int = {
 
     if (log.isDebugEnabled) {
       log.debug("Scheme 0 offset bytes {},{},{},{}", Array[Int](pBuffer(8) & 0x0ff, pBuffer(9) & 0x0ff, pBuffer(10) & 0x0ff, pBuffer(11) & 0x0ff))

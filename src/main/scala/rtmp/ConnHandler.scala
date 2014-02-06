@@ -10,9 +10,10 @@ import java.net.InetSocketAddress
 import akka.event.Logging
 import java.security.KeyPair
 import rtmp.v2.Protocol
-import rtmp.v2.handshake.{Constants, Crypto}
+import rtmp.protocol.v2.handshake.{Constants, Crypto}
 import rtmp.protocol.BaseProtocol
 import java.util.Random
+import rtmp.protocol.v2.handshake.Crypto
 
 sealed trait State
 case object HandshakeGet extends State
@@ -91,8 +92,9 @@ class ConnHandler extends Actor with FSM[State, Data] {
 
     handshakeVersion match {
 
-      case 0 =>
-        new rtmp.v1.Protocol()
+      // Implement protocol V1 and uncomment this
+      // case 0 =>
+      //   new rtmp.v1.Protocol()
 
       case 0x03 =>
 
@@ -105,6 +107,8 @@ class ConnHandler extends Actor with FSM[State, Data] {
 
         val randBytes2: Array[Byte] = new Array[Byte](Constants.HANDSHAKE_SIZE - Constants.DIGEST_LENGTH)
         random.nextBytes(randBytes2)
+
+        implicit val log = this.log
 
         new rtmp.v2.Protocol(keyPair, randBytes1, randBytes2)
 

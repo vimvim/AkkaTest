@@ -95,7 +95,7 @@ class ServerDumpReader(path:String) extends DumpReader(path, "out") {
 /**
  *
  */
-class Test extends App {
+class Test {
 
   val clientDumpReader = new ClientDumpReader("dump")
   val serverDumpReader = new ServerDumpReader("dump")  

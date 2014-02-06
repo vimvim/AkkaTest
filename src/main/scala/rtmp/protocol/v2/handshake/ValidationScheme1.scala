@@ -5,7 +5,7 @@ import akka.event.LoggingAdapter
 /**
  *
  */
-class ValidationScheme1(implicit val log:LoggingAdapter) extends ValidationScheme {
+class ValidationScheme1(implicit val log:LoggingAdapter) extends ValidationScheme(1) {
 
   /**
    * Returns the DH byte offset.

@@ -3,7 +3,7 @@ package rtmp.protocol.v2.handshake
 /**
  *
  */
-abstract class ValidationScheme {
+abstract class ValidationScheme(val id:Int) {
 
   /**
    * Validate current scheme against passed data
@@ -39,9 +39,9 @@ abstract class ValidationScheme {
     true
   }
 
-  abstract def getDHOffset(bytes: Array[Byte]): Int
+  def getDHOffset(bytes: Array[Byte]): Int
 
-  abstract def getDigestOffset(input: Array[Byte]):Int
+  def getDigestOffset(input: Array[Byte]):Int
 
 
 }

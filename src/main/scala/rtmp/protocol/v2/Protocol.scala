@@ -43,7 +43,7 @@ class Protocol(keys: KeyPair, randBytes1:Array[Byte], randBytes2:Array[Byte])(im
     log.debug("Public key: {}", dhY)
 
     var result: Array[Byte] = dhY.toByteArray
-    log.debug("Public key as bytes - length [{}]: {}", result.length, Hex.encodeHexString(result))
+    // log.debug("Public key as bytes - length [{}]: {}", result.length, Hex.encodeHexString(result))
 
     val temp: Array[Byte] = new Array[Byte](Constants.KEY_LENGTH)
     if (result.length < Constants.KEY_LENGTH) {

@@ -1,6 +1,6 @@
 package rtmp.v1
 
-import rtmp.protocol.BaseProtocol
+import rtmp.protocol.{Response, BaseProtocol}
 
 /**
  * Created with IntelliJ IDEA.
@@ -9,6 +9,7 @@ import rtmp.protocol.BaseProtocol
  * Time: 5:58 PM
  * To change this template use File | Settings | File Templates.
  */
-class Protocol extends BaseProtocol {
+abstract class Protocol extends BaseProtocol {
 
+  // def handshake(input: Array[Byte]): Response = ???
 }
