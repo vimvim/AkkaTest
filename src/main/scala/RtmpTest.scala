@@ -5,8 +5,9 @@ import rtmp.Test
  */
 object RtmpTest extends App {
 
-  new Test()
-
+  override def main(args: Array[String]) = {
+    new Test()
+  }
 
 
 }

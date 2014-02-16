@@ -27,7 +27,7 @@ class Request(input:Array[Byte])(implicit val log:LoggingAdapter) {
 
   protected def createValidationScheme(): ValidationScheme = {
 
-    val schema1 = new ValidationScheme0()
+    val schema1 = new ValidationScheme1()
     if (schema1.validate(input)) schema1
 
     val schema0 = new ValidationScheme0()

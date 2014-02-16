@@ -24,7 +24,9 @@ class Protocol(keys: KeyPair, randBytes1:Array[Byte], randBytes2:Array[Byte])(im
 
   def handshake(input:Array[Byte]):Response = {
 
-    val request = new Request(input)
+    val data = input.slice(1, input.length)
+
+    val request = new Request(data)
 
     new rtmp.protocol.v2.handshake.Response(3, request.validationScheme, publicKey, request.key, randBytes1, randBytes2)
   }

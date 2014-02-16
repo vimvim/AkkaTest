@@ -8,6 +8,8 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.impl.SimpleConfigOrigin
+import com.typesafe.config.impl.ConfigString
 
 import rtmp.v2.Protocol
 import rtmp.protocol.Response
@@ -103,6 +105,12 @@ class Test {
   val keyPair = serverDumpReader.loadKeyPair("dump", "DH")
   val rand1 = serverDumpReader.loadRand1()
   val rand2 = serverDumpReader.loadRand1()
+
+  // val defaultConfig = ConfigFactory.load.getConfig("akka")
+  // val config = defaultConfig.withValue("stdout-logleve", new ConfigString(SimpleConfigOrigin.newSimple(""),"DEBUG"))
+  val config = ConfigFactory.load("akka")
+  val config2 = ConfigFactory.load
+
 
   val system = ActorSystem("TestSystem", ConfigFactory.load.getConfig("akka"))
   implicit val log = Logging.getLogger(system, this)
