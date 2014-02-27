@@ -2,6 +2,7 @@ package rtmp.protocol.v2.handshake
 
 import akka.event.LoggingAdapter
 import akka.util.ByteString
+import utils.HexBytesUtil
 
 /**
  *
@@ -24,6 +25,7 @@ class Request(input:Array[Byte])(implicit val log:LoggingAdapter) {
 
   // Used for creating hash on the random data
   val key = Crypto.calculateHMAC_SHA256(challengeKey, Constants.GENUINE_FMS_KEY, 68)
+  log.debug("Key: {}", HexBytesUtil.bytes2hex(key))
 
   protected def createValidationScheme(): ValidationScheme = {
 

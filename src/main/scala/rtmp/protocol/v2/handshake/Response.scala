@@ -9,6 +9,8 @@ import akka.event.LoggingAdapter
 class Response(handshakeType:Byte, validationScheme:ValidationScheme, publicKey:Array[Byte], key:Array[Byte], randBytes1:Array[Byte], randBytes2:Array[Byte])
               (implicit val log:LoggingAdapter) extends rtmp.protocol.Response {
 
+  log.debug("Generating handshake response")
+
   require(randBytes1.length==Constants.HANDSHAKE_SIZE-8)
   require(randBytes2.length==Constants.HANDSHAKE_SIZE - Constants.DIGEST_LENGTH)
 
@@ -24,14 +26,12 @@ class Response(handshakeType:Byte, validationScheme:ValidationScheme, publicKey:
   handshakeBytes.update(6, 3)
   handshakeBytes.update(7, 4)
 
-
   // Get the server dh offset
   val serverDHOffset: Int = validationScheme.getDHOffset(handshakeBytes)
   log.debug("Outgoing DH offset: {}", serverDHOffset)
 
   // Create handshake response and add public key to it
   System.arraycopy(publicKey, 0, handshakeBytes, serverDHOffset, Constants.KEY_LENGTH)
-
 
   // Calculate the server digest ( hash ) and add to handshake data
   val serverDigestOffset: Int = validationScheme.getDigestOffset(handshakeBytes)
@@ -42,7 +42,6 @@ class Response(handshakeType:Byte, validationScheme:ValidationScheme, publicKey:
 
   val serverHandshakeHash = Crypto.calculateHMAC_SHA256(tempBuffer, Constants.GENUINE_FMS_KEY, 36)
   System.arraycopy(serverHandshakeHash, 0, handshakeBytes, serverDigestOffset, Constants.DIGEST_LENGTH)
-
 
   val randBytesHash: Array[Byte] = Crypto.calculateHMAC_SHA256(randBytes2, key, Constants.DIGEST_LENGTH)
 

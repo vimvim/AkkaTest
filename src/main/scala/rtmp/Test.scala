@@ -104,16 +104,20 @@ class Test {
   
   val keyPair = serverDumpReader.loadKeyPair("dump", "DH")
   val rand1 = serverDumpReader.loadRand1()
-  val rand2 = serverDumpReader.loadRand1()
+  val rand2 = serverDumpReader.loadRand2()
 
   // val defaultConfig = ConfigFactory.load.getConfig("akka")
   // val config = defaultConfig.withValue("stdout-logleve", new ConfigString(SimpleConfigOrigin.newSimple(""),"DEBUG"))
-  val config = ConfigFactory.load("akka")
-  val config2 = ConfigFactory.load
+  // val config = ConfigFactory.load("akka")
+  // val config11 = ConfigFactory.load(classOf[Test].getClassLoader, "application.conf")
+  // val config12 = ConfigFactory.load(classOf[Test].getClassLoader, "application")
 
+  val config = ConfigFactory.load
 
-  val system = ActorSystem("TestSystem", ConfigFactory.load.getConfig("akka"))
+  val system = ActorSystem("TestSystem", config)
   implicit val log = Logging.getLogger(system, this)
+
+  log.info("RTMP Tests started")
 
   val protocol = new Protocol(keyPair, rand1, rand2)
 
