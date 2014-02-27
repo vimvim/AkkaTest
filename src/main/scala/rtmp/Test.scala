@@ -13,6 +13,7 @@ import com.typesafe.config.impl.ConfigString
 
 import rtmp.v2.Protocol
 import rtmp.protocol.Response
+import utils.HexBytesUtil
 
 
 /**
@@ -140,6 +141,17 @@ class Test {
     val respData = response.serialize()
     val respBytes = respData.toArray
 
-    require(java.util.Arrays.equals(respBytes, out_bytes))
+    if (log.isDebugEnabled) {
+      log.debug("Response: {}", HexBytesUtil.bytes2hex(respBytes))
+    }
+
+    if (!java.util.Arrays.equals(respBytes, out_bytes)) {
+
+      if (log.isDebugEnabled) {
+        log.debug("Math:     {}", HexBytesUtil.bytes2hex(out_bytes))
+      }
+
+      throw new java.lang.AssertionError("Assertion failed. Generated response do not match to test.")
+    }
   }
 }

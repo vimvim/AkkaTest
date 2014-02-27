@@ -2,6 +2,7 @@ package rtmp.protocol.v2.handshake
 
 import akka.util.{ByteStringBuilder, ByteString}
 import akka.event.LoggingAdapter
+import utils.HexBytesUtil
 
 /**
  * Implements handshake response
@@ -35,6 +36,7 @@ class Response(handshakeType:Byte, validationScheme:ValidationScheme, publicKey:
 
   // Calculate the server digest ( hash ) and add to handshake data
   val serverDigestOffset: Int = validationScheme.getDigestOffset(handshakeBytes)
+  log.debug("Server digest offset: {}", serverDigestOffset)
 
   val tempBuffer: Array[Byte] = new Array[Byte](Constants.HANDSHAKE_SIZE - Constants.DIGEST_LENGTH)
   System.arraycopy(handshakeBytes, 0, tempBuffer, 0, serverDigestOffset)
@@ -42,8 +44,10 @@ class Response(handshakeType:Byte, validationScheme:ValidationScheme, publicKey:
 
   val serverHandshakeHash = Crypto.calculateHMAC_SHA256(tempBuffer, Constants.GENUINE_FMS_KEY, 36)
   System.arraycopy(serverHandshakeHash, 0, handshakeBytes, serverDigestOffset, Constants.DIGEST_LENGTH)
+  log.debug("Server handshake hash: {}", HexBytesUtil.bytes2hex(serverHandshakeHash))
 
   val randBytesHash: Array[Byte] = Crypto.calculateHMAC_SHA256(randBytes2, key, Constants.DIGEST_LENGTH)
+  log.debug("Rand bytes hash: {}", HexBytesUtil.bytes2hex(randBytesHash))
 
   def serialize():ByteString = {
 

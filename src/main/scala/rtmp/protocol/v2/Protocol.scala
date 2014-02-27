@@ -9,6 +9,7 @@ import rtmp.protocol.v2.handshake.{Constants, Crypto, Request}
 import javax.crypto.interfaces.DHPublicKey
 import java.math.BigInteger
 import akka.event.LoggingAdapter
+import utils.HexBytesUtil
 
 
 /**
@@ -23,6 +24,11 @@ class Protocol(keys: KeyPair, randBytes1:Array[Byte], randBytes2:Array[Byte])(im
   val publicKey = getPublicKey(keys)
 
   def handshake(input:Array[Byte]):Response = {
+
+    // TODO: Implement Log.debug, Log.warning with the ability to lazy evaluation of the passed closure depends on the configured
+    // TODO: debugger level
+
+    log.debug("Public key bytes:{} ", HexBytesUtil.bytes2hex(publicKey))
 
     val data = input.slice(1, input.length)
 
