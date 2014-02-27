@@ -27,6 +27,8 @@ class Response(handshakeType:Byte, validationScheme:ValidationScheme, publicKey:
   handshakeBytes.update(6, 3)
   handshakeBytes.update(7, 4)
 
+  System.arraycopy(randBytes1, 0, handshakeBytes, 8, randBytes1.length)
+
   // Get the server dh offset
   val serverDHOffset: Int = validationScheme.getDHOffset(handshakeBytes)
   log.debug("Outgoing DH offset: {}", serverDHOffset)

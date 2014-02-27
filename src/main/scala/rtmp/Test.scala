@@ -125,8 +125,9 @@ class Test {
   val handshake_in_1 = clientDumpReader.readPacket()
   val handshake_out_1 = serverDumpReader.readPacket()
 
-  assertOutput(protocol.handshake, handshake_in_1, handshake_out_1)
-  protocol.handshake(handshake_in_1)
+  assertOutput("Handshake", protocol.handshake, handshake_in_1, handshake_out_1)
+
+  // protocol.handshake(handshake_in_1)
 
   /**
    * Execute protocol handler and ensure that encoded response is equals to the loaded from dump file.
@@ -135,7 +136,9 @@ class Test {
    * @param in_bytes        Input bytes ( sent by client )
    * @param out_bytes       Output bytes ( sent by server as are result of the processing client request )
    */
-  def assertOutput(f: (Array[Byte]) => Response, in_bytes: Array[Byte], out_bytes: Array[Byte] ) = {
+  def assertOutput(stepName:String, f: (Array[Byte]) => Response, in_bytes: Array[Byte], out_bytes: Array[Byte] ) = {
+
+    log.info("Test: {}", stepName)
 
     val response = f(in_bytes)
     val respData = response.serialize()
@@ -153,5 +156,7 @@ class Test {
 
       throw new java.lang.AssertionError("Assertion failed. Generated response do not match to test.")
     }
+
+    log.info("Test: {}\t\t [PASSED]", stepName)
   }
 }
