@@ -1,6 +1,8 @@
 import akka.actor._
 
+import akka.io.Tcp.Received
 import akka.io.{ IO, Tcp }
+import akka.testkit.{TestProbe, TestActorRef}
 import akka.util.{CompactByteString, ByteString}
 import java.net.InetSocketAddress
 
@@ -43,24 +45,32 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
   when(Auth) {
     case Event(Received(data), Uninitialized) ⇒
 
-      stay()
+      val login = data.decodeString("UTF-8").trim
+      log.info("Login entered:"+login)
 
-      goto(Running) using SessionData(data.decodeString("UTF-8"))
+      connection ! Write(CompactByteString("Welcome "+login+"\r\n"))
+      connection ! Write(CompactByteString("Enter command: "))
+
+      goto(Running) using SessionData(login)
   }
 
   when(Running) {
 
-    case Event(Received(data), SessionData(_)) ⇒
+    case Event(Received(data), SessionData(login)) ⇒
 
-      val command = data.decodeString("UTF-8")
+      val command = data.decodeString("UTF-8").trim
+      log.info("Command entered:"+login)
 
-      if (command=="close") {
+      if (command.equals("close")) {
+
+        connection ! Write(CompactByteString("Good by ! \r\n\r\nHello ! \r\nEnter login: "))
 
         goto(Auth) using Uninitialized
 
       } else {
 
-        connection ! Write(CompactByteString("cmd: "+command))
+        connection ! Write(CompactByteString(login+"> "+command+"\r\n"))
+        connection ! Write(CompactByteString("Enter command: "))
 
         stay()
       }
@@ -71,7 +81,7 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
   initialize()
 }
 
-class Server extends Actor {
+class Server extends Actor with ActorLogging {
 
   import Tcp._
   import context.system
@@ -80,11 +90,15 @@ class Server extends Actor {
 
   def receive = {
     case b @ Bound(localAddress) ⇒
-    // do some logging or setup ...
+      // do some logging or setup ...
+      log.info("Bound to interface")
 
     case CommandFailed(_: Bind) ⇒ context stop self
 
     case c @ Connected(remote, local) ⇒
+
+      log.info("Connected:"+remote)
+
       val handler = context.actorOf(Props(classOf[ConnHandler], sender, remote))
       val connection = sender
       connection ! Register(handler)
@@ -95,6 +109,22 @@ object AkkaFsmIOTest extends App {
 
   val system = ActorSystem("akkaTest")
 
-  val server = system.actorOf(Props[Server])
+  // val server = system.actorOf(Props[Server])
+
+
+  import akka.testkit.TestFSMRef
+
+  // TODO: Check how to implement using WordSpec
+  // TODO: http://doc.akka.io/docs/akka/2.2.4/scala/testing.html
+
+  val connProbe = TestProbe()
+
+  val connActor:TestActorRef[ConnHandler] = TestFSMRef(new ConnHandler(connProbe.ref, new InetSocketAddress(0)))
+  assert(connActor.underlyingActor.stateName == Auth)
+
+  connActor ! Received(CompactByteString("user1"))
+
+  connProbe.fishForMessage()
+
 
 }
