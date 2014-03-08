@@ -1,10 +1,11 @@
 import akka.actor._
 
-import akka.io.Tcp.Received
+import akka.io.Tcp.{Write, Received}
 import akka.io.{ IO, Tcp }
-import akka.testkit.{TestProbe, TestActorRef}
+import akka.testkit.{TestFSMRef, TestProbe, TestActorRef}
 import akka.util.{CompactByteString, ByteString}
 import java.net.InetSocketAddress
+import scala.concurrent.duration._
 
 /**
  * This file contain code for Akka FSM IO workbench.
@@ -105,9 +106,95 @@ class Server extends Actor with ActorLogging {
   }
 }
 
+class TestStreamSource {
+
+  val testInput = Array[String](
+    "user1\r\n","cmd1\r\n","close"
+  )
+
+  val inputItr = testInput.iterator
+
+  var testOutput:ByteString = CompactByteString("Hello ! \r\nEnter login: " +
+    "Welcome user1\r\n" +
+    "Enter command: user1> cmd1\r\n" +
+    "Enter command: Good by ! \r\n\r\nHello ! \r\nEnter login: ")
+
+  def getInputChunk:Option[ByteString] = {
+
+    if (inputItr.hasNext) {
+      Some(CompactByteString(inputItr.next()))
+    } else {
+      None
+    }
+  }
+
+  def getOutputChunk(size:Int):ByteString = {
+
+    val res = testOutput.splitAt(size)
+
+    testOutput = res._2
+
+    res._1
+  }
+
+}
+
+/**
+ * Will send input to the actor
+ *
+ * @param testSource
+ */
+class TcpStreamTester(testSource:TestStreamSource, implicit val system:ActorSystem) {
+
+  val connProbe = TestProbe()
+
+  val connActor:TestActorRef[ConnHandler] = TestFSMRef(new ConnHandler(connProbe.ref, new InetSocketAddress(0)))
+
+  def testActor() {
+
+    assert(connActor.underlyingActor.stateName == Auth)
+
+    def sendNextChunk():Unit = {
+
+      testSource.getInputChunk match {
+
+        case Some(value) => {
+
+          connActor ! Received(value)
+
+          while (connProbe.msgAvailable) {
+
+            val msg = connProbe.receiveOne(1.millisecond)
+            msg match {
+
+              case Write(outputValue, ack)=> {
+
+                val testData = testSource.getOutputChunk(outputValue.length)
+                if (!testData.sameElements(outputValue)) {
+                  throw new Exception("Test data not match");
+                }
+              }
+            }
+          }
+
+          sendNextChunk()
+        }
+
+        case None =>
+      }
+    }
+
+    sendNextChunk()
+  }
+}
+
+
 object AkkaFsmIOTest extends App {
 
-  val system = ActorSystem("akkaTest")
+  implicit val system = ActorSystem("akkaTest")
+
+  val tester = new TcpStreamTester(new TestStreamSource(), system)
+  tester.testActor()
 
   // val server = system.actorOf(Props[Server])
 
@@ -117,14 +204,19 @@ object AkkaFsmIOTest extends App {
   // TODO: Check how to implement using WordSpec
   // TODO: http://doc.akka.io/docs/akka/2.2.4/scala/testing.html
 
+  /*
   val connProbe = TestProbe()
 
   val connActor:TestActorRef[ConnHandler] = TestFSMRef(new ConnHandler(connProbe.ref, new InetSocketAddress(0)))
   assert(connActor.underlyingActor.stateName == Auth)
 
+  // TODO: IMPORTANT !!! WE SIMPLY WILL NEEDS TO SEND MESSAGES AND CHECK IS WE HAVE SOMETHING RECEIVED BY PROBE
+  // TODO: IF PROBE RECEIVED SOMETHING - CHECK IT AND BACK TO SENDING MESSAGES !!!
+
   connActor ! Received(CompactByteString("user1"))
 
-  connProbe.fishForMessage()
+  connProbe.receiveWhile()
+  */
 
 
 }
