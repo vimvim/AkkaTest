@@ -1,20 +1,20 @@
 package rtmp
 
+import java.net.InetSocketAddress
+import java.security.KeyPair
+import java.util.Random
+
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.io.{ IO, Tcp }
-import scala.concurrent.duration._
 import akka.util.{CompactByteString, ByteString}
-import java.net.InetSocketAddress
-
-
 import akka.event.Logging
-import java.security.KeyPair
+
 import rtmp.v2.Protocol
 import rtmp.protocol.v2.handshake.{Constants, Crypto}
 import rtmp.protocol.BaseProtocol
-import java.util.Random
 import rtmp.protocol.v2.handshake.Crypto
-
 
 
 object ProcessBuffer
@@ -27,6 +27,7 @@ case class ShortHeader(timestamp:Int, length:Int, typeID:Byte)
 
 case class DataChunk(header:Header, data:ByteString)
 
+// Market types for various types of the header
 sealed trait HeaderType
 case object BasicHeaderType extends HeaderType            // Basic header
 case object ExtendedHeaderType extends HeaderType         // Basic header with timestamp
