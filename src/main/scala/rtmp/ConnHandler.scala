@@ -23,10 +23,18 @@ case object ReceiveBody extends State
 case object Open extends State
 case object ClosedConn extends State
 
+object ProcessBuffer
 
 sealed trait Data
 case class Handshake(buffer:ByteString) extends Data
-case class HandshakeData extends Data
+case class HandshakeData() extends Data
+
+
+sealed trait HeaderType
+case object BasicHeader extends HeaderType            // Basic header
+case object ExtendedBasicHeader extends HeaderType    // Basic header with timestamp
+case object FullHeader extends HeaderType             // Full header
+case object ShortHeader extends HeaderType            // Full header without message id
 
 /**
  *
@@ -62,7 +70,12 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
 
         connection ! Write(response.serialize())
 
-        goto(HandshakeConfirm)
+        // If there is another data stay left in the buffer
+        // we needs to send self message, so ensure that this data
+        // will be processed after actor is going to the next state
+        if (buffer.length>0) self ! ProcessBuffer
+
+        goto(HandshakeConfirm) using Handshake(buffer)
 
       }, (restBuffer)=>{
         stay using Handshake(restBuffer)
@@ -74,7 +87,27 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
   }
 
   when(ReceiveHeader) {
-    case Event(Received(data), Handshake) ⇒ stay()
+
+
+    case Event(ProcessBuffer, Handshake(accumulatedBuffer)) ⇒
+
+
+    case Event(Received(data), Handshake(accumulatedBuffer)) ⇒ accumAndProcess(data, accumulatedBuffer, 1, processHeader,
+      (restBuffer)=> stay using Handshake(restBuffer)
+    )
+/*
+      val buffer = accumulatedBuffer.concat(data)
+
+      processBuffer(buffer, 1, (buffer, input) => {
+
+        val headerType = getHeaderType(buffer.head)
+
+
+
+      }, (restBuffer)=>{
+        stay using Handshake(restBuffer)
+      })
+*/
   }
 
   when(ReceiveBody) {
@@ -92,6 +125,76 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
   }
 
   initialize()
+
+  /**
+   * Start decoding header
+   *
+   * @param buffer
+   * @param input
+   * @return
+   */
+  def decodeHeader(buffer:ByteString, input:ByteString):State = {
+
+    val headerType = getHeaderType(input.head)
+    val streamID = input.head & 3
+
+    headerType match {
+      case
+    }
+
+  }
+
+  /**
+   * Decode stream id from header
+   *
+   * @param buffer
+   * @param input
+   * @param headerType
+   * @param nextDecodeFunc
+   * @return
+   */
+  def decodeHeaderSID(buffer:ByteString, input:ByteString, headerType:HeaderType, nextDecodeFunc:() => State):State = {
+
+    val streamID = input.head & 3
+    if (streamID==0) {
+
+    } else if (streamID==1) {
+
+    } else if (streamID==2) {
+
+    } else {
+
+    }
+  }
+
+  /**
+   * Decode full header without message id
+   *
+   */
+  def decodeShortHeader(buffer:ByteString, input:ByteString, headerType:HeaderType, streamID:Int):State = {
+
+  }
+
+  /**
+   * Decode basic header with timestamp
+   *
+   */
+  def decodeExtendedBasicHeader(buffer:ByteString, input:ByteString, headerType:HeaderType, streamID:Int):State = {
+
+  }
+
+  /**
+   * Decode full header ( contain both timestamp and message id )
+   *
+   * @param buffer
+   * @param input
+   * @param headerType
+   * @param streamID
+   * @return
+   */
+  def decodeFullHeader(buffer:ByteString, input:ByteString, headerType:HeaderType, streamID:Int):State = {
+
+  }
 
   def processBuffer(buffer:ByteString, chunkSize:Int, handlerFunc: (ByteString, Array[Byte])=>State, stayFunc: (ByteString)=>State):State = {
 
@@ -139,27 +242,14 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
     }
   }
 
-  def getHeaderType(firstByte:Byte) = {
+  def getHeaderType(firstByte:Byte):HeaderType = {
 
-    if ((firstByte & 0x3f) == 0) {
-      if (remaining < 2) {
-        in.position(position)
-        state.bufferDecoding(2)
-        return null
-      }
-      headerValue = (headerByte & 0xff) << 8 | (in.get & 0xff)
-      byteCount = 2
-    } else if ((firstByte & 0x3f) == 1) {
-      if (remaining < 3) {
-        in.position(position)
-        state.bufferDecoding(3)
-        return null
-      }
-      headerValue = (headerByte & 0xff) << 16 | (in.get & 0xff) << 8 | (in.get & 0xff)
-      byteCount = 3
-    } else {
-      headerValue = headerByte & 0xff
-      byteCount = 1
+    val headerType = firstByte >> 6
+    headerType match {
+      case 0 => FullHeader
+      case 1 => ShortHeader
+      case 2 => ExtendedBasicHeader
+      case 3 => BasicHeader
     }
   }
 
