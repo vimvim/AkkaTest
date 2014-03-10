@@ -15,6 +15,25 @@ import rtmp.protocol.BaseProtocol
 import java.util.Random
 import rtmp.protocol.v2.handshake.Crypto
 
+
+
+object ProcessBuffer
+
+case class Header(streamID:Int)
+case class BasicHeader(streamID:Int) extends Header(streamID)
+case class ExtendedBasicHeader(timestamp:Int) extends Header
+case class FullHeader(timestamp:Int, length:Int, typeID:Byte, messageSID:Int)
+case class ShortHeader(timestamp:Int, length:Int, typeID:Byte)
+
+case class DataChunk(header:Header, data:ByteString)
+
+sealed trait HeaderType
+case object BasicHeaderType extends HeaderType            // Basic header
+case object ExtendedHeaderType extends HeaderType         // Basic header with timestamp
+case object FullHeaderType extends HeaderType             // Full header
+case object ShortHeaderType extends HeaderType            // Full header without message id
+
+// States
 sealed trait State
 case object HandshakeGet extends State
 case object HandshakeConfirm extends State
@@ -23,18 +42,14 @@ case object ReceiveBody extends State
 case object Open extends State
 case object ClosedConn extends State
 
-object ProcessBuffer
-
+// States data objects
 sealed trait Data
 case class Handshake(buffer:ByteString) extends Data
 case class HandshakeData() extends Data
+case class DecodeHeaderData(buffer:ByteString) extends Data
+case class ReceiveBodyData(buffer:ByteString, header:Header) extends Data
 
 
-sealed trait HeaderType
-case object BasicHeader extends HeaderType            // Basic header
-case object ExtendedBasicHeader extends HeaderType    // Basic header with timestamp
-case object FullHeader extends HeaderType             // Full header
-case object ShortHeader extends HeaderType            // Full header without message id
 
 /**
  *
@@ -136,10 +151,10 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
   def decodeHeader(buffer:ByteString, input:ByteString):State = {
 
     val headerType = getHeaderType(input.head)
-    val streamID = input.head & 3
 
     headerType match {
-      case
+      case BasicHeaderType => decodeHeaderSID(buffer, input, headerType, decodeBasicHeader)
+      // case
     }
 
   }
@@ -153,7 +168,8 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
    * @param nextDecodeFunc
    * @return
    */
-  def decodeHeaderSID(buffer:ByteString, input:ByteString, headerType:HeaderType, nextDecodeFunc:() => State):State = {
+  def decodeHeaderSID(buffer:ByteString, input:ByteString, headerType:HeaderType,
+                      nextDecodeFunc:(ByteString, HeaderType, Int) => State):State = {
 
     val streamID = input.head & 3
     if (streamID==0) {
@@ -168,8 +184,19 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
   }
 
   /**
-   * Decode full header without message id
+   * Decode basic header ( contain only stream id )
    *
+   * @param buffer
+   * @param headerType
+   * @param streamID
+   * @return
+   */
+  def decodeBasicHeader(buffer:ByteString, headerType:HeaderType, streamID:Int):State = {
+    goto(ReceiveBody) using ReceiveBodyData(buffer, new BasicHeader(streamID))
+  }
+
+  /**
+   * Decode full header without message id
    */
   def decodeShortHeader(buffer:ByteString, input:ByteString, headerType:HeaderType, streamID:Int):State = {
 
@@ -246,10 +273,10 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
 
     val headerType = firstByte >> 6
     headerType match {
-      case 0 => FullHeader
-      case 1 => ShortHeader
-      case 2 => ExtendedBasicHeader
-      case 3 => BasicHeader
+      case 0 => FullHeaderType
+      case 1 => ShortHeaderType
+      case 2 => ExtendedHeaderType
+      case 3 => BasicHeaderType
     }
   }
 
