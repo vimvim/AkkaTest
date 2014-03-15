@@ -8,22 +8,23 @@ import scala.concurrent.duration._
 
 import akka.actor._
 import akka.io.{ IO, Tcp }
-import akka.util.{CompactByteString, ByteString}
+import akka.util.{ByteIterator, CompactByteString, ByteString}
 import akka.event.Logging
 
 import rtmp.v2.Protocol
 import rtmp.protocol.v2.handshake.{Constants, Crypto}
 import rtmp.protocol.BaseProtocol
 import rtmp.protocol.v2.handshake.Crypto
+import java.nio.ByteOrder
 
 
 object ProcessBuffer
 
-case class Header(streamID:Int)
-case class BasicHeader(streamID:Int) extends Header(streamID)
-case class ExtendedBasicHeader(timestamp:Int) extends Header
-case class FullHeader(timestamp:Int, length:Int, typeID:Byte, messageSID:Int)
-case class ShortHeader(timestamp:Int, length:Int, typeID:Byte)
+sealed trait Header
+case class BasicHeader(streamID:Int) extends Header
+case class ExtendedBasicHeader(streamID:Int, timestamp:Int) extends Header
+case class FullHeader(streamID:Int, timestamp:Int, length:Int, typeID:Byte, messageSID:Int) extends Header
+case class ShortHeader(streamID:Int, timestamp:Int, length:Int, typeID:Byte) extends Header
 
 case class DataChunk(header:Header, data:ByteString)
 
@@ -67,7 +68,9 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
 
       val buffer = accumulatedBuffer.concat(data)
 
-      processBuffer(buffer, Constants.HANDSHAKE_SIZE, (buffer, input)=>{
+      processBuffer(buffer, Constants.HANDSHAKE_SIZE, (buffer)=>{
+
+
 
         val handshakeType = input(0)
         val versionByte = input(4)
@@ -105,10 +108,10 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
   when(ReceiveHeader) {
 
 
-    case Event(ProcessBuffer, Handshake(accumulatedBuffer)) ⇒
+    // case Event(ProcessBuffer, Handshake(buffer)) ⇒
 
 
-    case Event(Received(data), Handshake(accumulatedBuffer)) ⇒ accumAndProcess(data, accumulatedBuffer, 1, processHeader,
+    case Event(Received(data), Handshake(buffer)) ⇒ appendAndProcess(data, buffer, 1, decodeHeader,
       (restBuffer)=> stay using Handshake(restBuffer)
     )
 /*
@@ -145,16 +148,17 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
   /**
    * Start decoding header
    *
-   * @param buffer
-   * @param input
+   * @param bufferItr
    * @return
    */
-  def decodeHeader(buffer:ByteString, input:ByteString):State = {
+  def decodeHeader(bufferItr:ByteIterator):State = {
 
-    val headerType = getHeaderType(input.head)
+    val firstByte = bufferItr.getByte
+    val headerType = getHeaderType(firstByte)
 
+    // TODO: Move decoding in the header classes. Create subclasses for each type of the header.
     headerType match {
-      case BasicHeaderType => decodeHeaderSID(buffer, input, headerType, decodeBasicHeader)
+      case BasicHeaderType => decodeHeaderSID(bufferItr, firstByte, headerType, decodeBasicHeader)
       // case
     }
 
@@ -162,78 +166,111 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
 
   /**
    * Decode stream id from header
+   * For stream ID < 64 real value is stored in previous 6 bits and this field is not written;
+   * for stream ID < 320 previous 6 bits are zero and this field is single byte,
+   * otherwise previous 6 bits contain value "1" and this field is written as two bytes.
    *
-   * @param buffer
-   * @param input
+   *
+   * @param bufferItr
    * @param headerType
    * @param nextDecodeFunc
    * @return
    */
-  def decodeHeaderSID(buffer:ByteString, input:ByteString, headerType:HeaderType,
-                      nextDecodeFunc:(ByteString, HeaderType, Int) => State):State = {
+  def decodeHeaderSID(bufferItr:ByteIterator, firstByte:Byte, headerType:HeaderType,
+                      nextDecodeFunc:(ByteIterator, HeaderType, Int) => State):State = {
 
-    val streamID = input.head & 3
-    if (streamID==0) {
+    val sidFirstBits = firstByte & 0x3f
 
-    } else if (streamID==1) {
-
-    } else if (streamID==2) {
-
+    if (sidFirstBits==0) {
+      // Stream ID is one byte ( the next from first in the header )
+      nextDecodeFunc(bufferItr, headerType, 64+bufferItr.getByte)
+    } else if (sidFirstBits==1) {
+      // Stream ID is two bytes ( next from first in the header )
+      nextDecodeFunc(bufferItr, headerType, 64+bufferItr.getInt(ByteOrder.LITTLE_ENDIAN))
     } else {
-
+      // Stream ID combined with the chunk type in the single byte
+      nextDecodeFunc(bufferItr, headerType, sidFirstBits)
     }
   }
 
   /**
-   * Decode basic header ( contain only stream id )
+   * Decode full header ( 0x00 )
+   * Fields to decode: timestamp, length, type id, message stream id
    *
-   * @param buffer
+   * TODO: For decoding details see RTMPProtocolDecoder:448
+   *
+   * @param bufferItr
    * @param headerType
    * @param streamID
    * @return
    */
-  def decodeBasicHeader(buffer:ByteString, headerType:HeaderType, streamID:Int):State = {
+  def decodeFullHeader(bufferItr:ByteIterator, headerType:HeaderType, streamID:Int):State = {
+
+
+      val timestamp = reade
+
+  }
+
+  /**
+   * Decode full header without message id ( 0x01 )
+   * Fields to decode: time delta, length, type id
+   *
+   */
+  def decodeShortHeader(bufferItr:ByteIterator, headerType:HeaderType, streamID:Int):State = {
+
+  }
+
+  /**
+   * Decode basic header with timestamp ( 0x02 )
+   * Fields to decode: time delta
+   *
+   */
+  def decodeExtendedBasicHeader(bufferItr:ByteIterator, headerType:HeaderType, streamID:Int):State = {
+
+  }
+
+  /**
+   * Decode basic header ( 0x03 )
+   * Fields: none ( contain only stream id which is decoded early )
+   *
+   * @param bufferItr
+   * @param headerType
+   * @param streamID
+   * @return
+   */
+  def decodeBasicHeader(bufferItr:ByteIterator, headerType:HeaderType, streamID:Int):State = {
     goto(ReceiveBody) using ReceiveBodyData(buffer, new BasicHeader(streamID))
   }
 
   /**
-   * Decode full header without message id
-   */
-  def decodeShortHeader(buffer:ByteString, input:ByteString, headerType:HeaderType, streamID:Int):State = {
-
-  }
-
-  /**
-   * Decode basic header with timestamp
+   * Append new incoming data into already accumulated buffer and try to parse
    *
-   */
-  def decodeExtendedBasicHeader(buffer:ByteString, input:ByteString, headerType:HeaderType, streamID:Int):State = {
-
-  }
-
-  /**
-   * Decode full header ( contain both timestamp and message id )
-   *
-   * @param buffer
-   * @param input
-   * @param headerType
-   * @param streamID
+   * @param data            New incoming data
+   * @param buffer          Accumulated buffer
+   * @param chunkSize       Minimal chunk size for processing
+   * @param handlerFunc     Processing handler
+   * @param stayFunc        Will be called if no enough data
    * @return
    */
-  def decodeFullHeader(buffer:ByteString, input:ByteString, headerType:HeaderType, streamID:Int):State = {
-
+  def appendAndProcess(data:ByteString, buffer:ByteString, chunkSize:Int, handlerFunc: (ByteString)=>State, stayFunc: (ByteString)=>State):State = {
+    processBuffer(buffer.concat(data), chunkSize, handlerFunc, stayFunc)
   }
 
-  def processBuffer(buffer:ByteString, chunkSize:Int, handlerFunc: (ByteString, Array[Byte])=>State, stayFunc: (ByteString)=>State):State = {
+  /**
+   * Process accumulated buffer
+   *
+   * @param buffer          Accumulated buffer
+   * @param chunkSize       Minimal chunk size for processing
+   * @param handlerFunc     Processing handler
+   * @param stayFunc        Will be called if no enough data
+   * @return
+   */
+  def processBuffer(buffer:ByteString, chunkSize:Int, handlerFunc: (ByteString)=>State, stayFunc: (ByteString)=>State):State = {
 
     if (buffer.length>=chunkSize) {
 
-      val split = buffer.splitAt(chunkSize)
-
-      val compactData = split._2.compact
-      val input = compactData.asByteBuffer.array()
-
-      handlerFunc(split._1, input)
+      // TODO: Needs to catch overflow exception ( will be raised if no enough data in the buffer ) and call stayFunc
+      handlerFunc(buffer)
 
     } else {
 
