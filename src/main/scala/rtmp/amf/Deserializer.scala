@@ -1,6 +1,7 @@
 package rtmp.amf
 
 import scala.collection.immutable.List
+import scala.collection.immutable.ListSet
 
 import akka.util.ByteIterator
 
@@ -15,7 +16,7 @@ abstract class Deserializer(bufferItr:ByteIterator) extends Core {
 
   def readInteger:Int
 
-  def readSomething:Object
+  def readSomething:Any
 
   def hasSomething:Boolean = bufferItr.hasNext
 
@@ -24,17 +25,19 @@ abstract class Deserializer(bufferItr:ByteIterator) extends Core {
    *
    * @return
    */
-  def readAll:List[_] = {
+  def readAll:ListSet[Any] = {
 
-    def readNextObject(params:List[_]) = {
+    def readNextObject(params:ListSet[Any]):ListSet[Any] = {
+
       if (hasSomething) {
         // params.::(readSomething)
-
+        params + readSomething
       } else {
-        objects
+        params
       }
     }
 
+    readNextObject(new ListSet[Any]())
   }
 
 }

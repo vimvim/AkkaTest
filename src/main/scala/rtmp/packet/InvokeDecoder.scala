@@ -40,14 +40,7 @@ class InvokeDecoder extends PacketDecoder {
 
     val parameters = deserializer.readAll
 
-    /*
-    while(deserializer.hasSomething) {
-
-      val param = deserializer.readSomething
-
-    }
-    */
-
+    Invoke(action, invokeId, parameters)
   }
 
 }

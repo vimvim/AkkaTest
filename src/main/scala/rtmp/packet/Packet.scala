@@ -1,8 +1,10 @@
 package rtmp.packet
 
-/**
- * Created by vim on 3/18/14.
- */
-class Packet {
+import scala.collection.immutable.ListSet
 
-}
+/**
+ *
+ */
+sealed trait Packet
+
+case class Invoke(action:String, invokeID:Int, params:ListSet[Any]) extends Packet
