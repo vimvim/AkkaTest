@@ -3,11 +3,14 @@ package rtmp
 import java.net.InetSocketAddress
 import java.security.KeyPair
 import java.util.Random
-import java.nio.ByteOrder
+import java.nio.{ByteBuffer, ByteOrder}
 
 import scala.concurrent.duration._
 import scala.util.control
-import scala.collection.immutable.HashMap
+import scala.collection.immutable.{Iterable, HashMap}
+import scala.collection.mutable.{HashMap => MutableMap }
+import scala.collection.generic.CanBuildFrom
+import scala.collection.GenIterable
 
 import akka.actor._
 import akka.io.{ IO, Tcp }
@@ -23,17 +26,12 @@ import rtmp.ReceiveBodyData
 import rtmp.Handshake
 
 
+
 // ConnHandler messages
 object ProcessBuffer
 
-case class DataChunk(header:Header, data:ByteString)
+// case class DataChunk(header:Header, data:ByteString)
 
-// Market types for various types of the header
-sealed trait HeaderType
-case object BasicHeaderType extends HeaderType            // Basic header
-case object ExtendedHeaderType extends HeaderType         // Basic header with timestamp
-case object FullHeaderType extends HeaderType             // Full header
-case object ShortHeaderType extends HeaderType            // Full header without message id
 
 // States
 sealed trait ConnState
@@ -48,8 +46,12 @@ sealed trait Data
 case class Handshake(buffer:ByteString) extends Data
 case class HandshakeData() extends Data
 case class DecodeHeaderData(buffer:ByteString) extends Data
-case class ReceiveBodyData(buffer:ByteString, header:Header) extends Data
+case class ReceiveBodyData(header:Header, buffer:ByteString) extends Data
 
+
+class ChannelInfo(var channelHandler:ActorRef, var packetSize:Int) {
+  var readRemaining:Int = 0
+}
 
 
 /**
@@ -68,6 +70,9 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
     (2, new ExtBasicHeaderDecoder()),
     (3, new BasicHeaderDecoder())
   )
+
+  val channels = new MutableMap[Int,ChannelInfo]()
+  var chunkSize = 128
 
   startWith(HandshakeGet, Handshake(CompactByteString("")))
 
@@ -95,11 +100,11 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
   }
 
   when(ReceiveBody) {
-    case Event(Received(data), ReceiveBodyData(header, buffer)) ⇒
 
-      // TODO: Needs to read remaining of the data for packet but no greater than chunk size
+    case Event(ProcessBuffer, ReceiveBodyData(header, buffer)) ⇒ processBody(buffer, header)
 
-      goto(state) using data
+    case Event(Received(data), ReceiveBodyData(header, buffer)) ⇒ processBodyData(buffer, data, header)
+
   }
 
   when(ClosedConn) {
@@ -114,6 +119,151 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
 
   initialize()
 
+  def processBodyData(buffer:ByteString, data:ByteString, header:Header):State = {
+    processBody(buffer.concat(data), header)
+  }
+
+  def processBody(buffer:ByteString, header:Header):State = {
+
+    getChannelInfo(header) match {
+
+      case Some(channelInfo:ChannelInfo) =>
+
+        val readSize = getReadSize(channelInfo)
+
+        processBuffer(buffer, readSize, (bufferItr)=>{
+
+          val packetData = new Array[Byte](readSize)
+          bufferItr.getBytes(packetData)
+
+          channelInfo.readRemaining = channelInfo.readRemaining + readSize
+
+          channelInfo.channelHandler ! ChunkReceived(header, CompactByteString(packetData))
+
+          (ReceiveHeader, (buffer)=>{
+            Handshake(buffer)
+          })
+        },
+        (buffer)=> stay using ReceiveBodyData(header, buffer)
+        )
+
+      case None =>
+        gotoClose
+    }
+  }
+
+  def gotoClose:State = {
+    connection ! Close
+    goto(ClosedConn)
+  }
+
+  def getReadSize(channelInfo:ChannelInfo):Int ={
+    if (channelInfo.readRemaining > chunkSize) chunkSize else channelInfo.readRemaining
+  }
+
+  def getChannelInfo(header:Header):Option[ChannelInfo] = {
+
+    header match {
+      case FullHeader(streamID, timestamp, extendedTime, length, typeID, messageSID) =>
+
+        channels.get(streamID) match {
+          case Some(channelInfo) =>
+
+            if (channelInfo.packetSize!=length) {
+              channelInfo.packetSize = length
+              channelInfo.readRemaining = 0
+            }
+
+            Some(channelInfo)
+
+          case None =>
+
+            val channelHandler = context.system.actorOf()
+            val channelInfo = new ChannelInfo(channelHandler, length)
+
+            channels.put(streamID, channelInfo)
+
+            Some(channelInfo)
+        }
+
+      case _ =>
+
+        channels.get(header.streamID) match {
+          case Some(channelInfo) =>
+            Some(channelInfo)
+
+          case None => None
+        }
+    }
+  }
+
+
+  /*
+  def processBody2(bufferItr:ByteIterator, header:Header):(ConnState, DataFunc) = {
+
+    header match {
+      case FullHeader(streamID, timestamp, extendedTime, length, typeID, messageSID) =>
+
+        channels.get(streamID) match {
+          case Some(channelInfo) =>
+
+            if (channelInfo.packetSize!=length) {
+              channelInfo.packetSize = length
+              channelInfo.readRemaining = 0
+            }
+
+            val toReceive = if ((readRemaining > chunkSize)) chunkSize else readRemaining
+
+            appendAndProcess(data, buffer, 1, decodeHeader,
+              (restBuffer)=> stay using Handshake(restBuffer)
+            )
+
+          case None =>
+
+            val channelHandler = context.system.actorOf()
+            channels.put(streamID, ChannelInfo(channelHandler, length))
+
+        }
+
+      case _ =>
+
+        channels.get(header.streamID) match {
+          case Some(channelInfo) =>
+
+          case None =>
+            // There is no channel info. Needs to close this connection.
+            close
+        }
+    }
+  }
+  */
+
+  /*
+  def processBodyData(bufferItr:ByteIterator, header:Header, channelInfo:ChannelInfo):(ConnState, DataFunc) = {
+
+    val toRead = if (channelInfo.readRemaining > chunkSize) chunkSize else channelInfo.readRemaining
+
+    if (bufferItr.len<toRead) {
+
+      (ReceiveBody, (buffer)=>{
+        ReceiveBodyData(header, buffer)
+      })
+
+    } else {
+
+      val packetData = new Array[Byte](toRead)
+      bufferItr.getBytes(packetData)
+
+      channelInfo.readRemaining = channelInfo.readRemaining + toRead
+
+      channelInfo.channelHandler ! ChunkReceived(header, CompactByteString(packetData))
+
+      (ReceiveHeader, (buffer)=>{
+        Handshake(buffer)
+      })
+    }
+  }
+  */
 
   def handshake(bufferItr:ByteIterator):(ConnState, DataFunc) = {
 
@@ -158,7 +308,7 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
 
     // goto(ReceiveBody) using ReceiveBodyData(bufferItr.toByteString, header)
     (ReceiveBody, (buffer)=>{
-      ReceiveBodyData(buffer, header)
+      ReceiveBodyData(header, buffer)
     })
   }
 
