@@ -1,9 +1,9 @@
-package rtmp.amf
+package rtmp.amf.amf3
 
 /**
  *
  */
-trait Amf3Core extends AmfCore {
+object Amf3Types {
 
   /**
    * Undefined marker

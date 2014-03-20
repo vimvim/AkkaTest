@@ -1,5 +1,9 @@
 package rtmp.amf
 
+sealed trait EncodingType
+case class AMF0Encoding() extends EncodingType
+case class AMF3Encoding() extends EncodingType
+
 /**
  *
  */

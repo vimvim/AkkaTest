@@ -1,7 +1,10 @@
 package rtmp.packet
 
 import akka.util.ByteString
-import rtmp.amf.{Amf0Deserializer, Amf3Deserializer, Deserializer, AMF}
+import rtmp.amf._
+import rtmp.packet.Invoke
+import rtmp.amf.amf3.Amf3Deserializer
+import rtmp.amf.amf0.Amf0Deserializer
 
 /**
  * Decoder for Invoke packets
@@ -30,8 +33,8 @@ class InvokeDecoder extends PacketDecoder {
 
   def decodePacket(deserializer:Deserializer): Packet = {
 
-    val action = deserializer.readString
-    val invokeId = deserializer.readInteger
+    val action = deserializer.readObject[String]
+    val invokeId = deserializer.readObject[Int]
 
     deserializer match {
       case amf3Deserializer: Amf3Deserializer => amf3Deserializer.forceAmf0 = false

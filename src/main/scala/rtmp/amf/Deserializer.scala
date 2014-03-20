@@ -10,13 +10,18 @@ import akka.util.ByteIterator
  */
 abstract class Deserializer(bufferItr:ByteIterator) extends Core {
 
-  def readDataType:Byte
+  def readObject[T]:T = {
+    val obj = readSomething
+    obj.asInstanceOf[T]
+  }
 
-  def readString:String
+  def readSomething:Any = {
 
-  def readInteger:Int
+    val typeId = readTypeID
+    val objectReader = getObjectReader(typeId)
 
-  def readSomething:Any
+    objectReader.read(typeId, bufferItr)
+  }
 
   def hasSomething:Boolean = bufferItr.hasNext
 
@@ -39,5 +44,9 @@ abstract class Deserializer(bufferItr:ByteIterator) extends Core {
 
     readNextObject(new ListSet[Any]())
   }
+
+  protected def getObjectReader(typeId:Byte):ObjectReader
+
+  private def readTypeID:Byte = bufferItr.getByte
 
 }
