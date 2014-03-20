@@ -2,7 +2,7 @@ package rtmp.amf.amf3
 
 import akka.util.ByteIterator
 
-import rtmp.amf.{DeserializationContext, ObjectReader}
+import rtmp.amf.{DeserializationContext, AmfObjectReader}
 
 trait Amf3IntegerReader {
 
@@ -39,7 +39,7 @@ trait Amf3IntegerReader {
 /**
  * Parser of AMF3 "compressed" integer data type
  */
-class IntegerReader extends ObjectReader with Amf3IntegerReader {
+class IntegerReader extends AmfObjectReader with Amf3IntegerReader {
 
   override def read(typeId: Byte, bufferItr: ByteIterator): Int = readAmf3Integer(bufferItr)
 

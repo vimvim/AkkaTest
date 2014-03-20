@@ -5,7 +5,7 @@ import akka.util.ByteIterator
 /**
  *
  */
-abstract class ObjectReader {
+abstract class AmfObjectReader {
 
   def read(typeId:Byte, bufferItr:ByteIterator):Any
 

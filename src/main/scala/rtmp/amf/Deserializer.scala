@@ -45,7 +45,7 @@ abstract class Deserializer(bufferItr:ByteIterator) extends Core {
     readNextObject(new ListSet[Any]())
   }
 
-  protected def getObjectReader(typeId:Byte):ObjectReader
+  protected def getObjectReader(typeId:Byte):AmfObjectReader
 
   private def readTypeID:Byte = bufferItr.getByte
 

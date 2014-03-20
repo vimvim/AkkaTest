@@ -1,12 +1,12 @@
 package rtmp.amf.amf0
 
 import akka.util.ByteIterator
-import rtmp.amf.ObjectReader
+import rtmp.amf.AmfObjectReader
 
 /**
  * AMF0 Long string reader
  */
-class LongStringReader extends ObjectReader {
+class LongStringReader extends AmfObjectReader {
 
   override def read(typeId: Byte, bufferItr: ByteIterator): Any = {
 

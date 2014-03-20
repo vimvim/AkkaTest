@@ -1,7 +1,7 @@
 package rtmp.amf.amf3
 
 import akka.util.ByteIterator
-import rtmp.amf.{ObjectReader, Deserializer}
+import rtmp.amf.{AmfObjectReader, Deserializer}
 import scala.collection.immutable.HashMap
 import rtmp.amf.amf0.{Amf0Deserializer, DoubleReader, NullReader}
 import scala.collection.mutable.LinkedList
@@ -17,7 +17,7 @@ class Amf3Deserializer(bufferItr:ByteIterator) extends Amf0Deserializer(bufferIt
   // Will force readString and readInteger to AMF0
   var forceAmf0:Boolean = false
 
-  def readers = HashMap[Int, ObjectReader](
+  def readers = HashMap[Int, AmfObjectReader](
     (Amf3Types.TYPE_UNDEFINED, new NullReader()),
     (Amf3Types.TYPE_INTEGER, new IntegerReader()),
     (Amf3Types.TYPE_NUMBER, new DoubleReader()),
@@ -26,7 +26,7 @@ class Amf3Deserializer(bufferItr:ByteIterator) extends Amf0Deserializer(bufferIt
     (Amf3Types.TYPE_BOOLEAN_FALSE, new BooleanReader())
   )
 
-  override protected def getObjectReader(typeId: Byte): ObjectReader = {
+  override protected def getObjectReader(typeId: Byte): AmfObjectReader = {
 
     if (forceAmf0) {
       super.getObjectReader(typeId)

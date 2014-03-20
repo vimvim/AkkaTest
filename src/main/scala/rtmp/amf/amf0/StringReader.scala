@@ -2,14 +2,11 @@ package rtmp.amf.amf0
 
 import akka.util.ByteIterator
 
-import rtmp.amf.ObjectReader
+import rtmp.amf.AmfObjectReader
 
-/**
- * AMF0 String reader
- */
-class StringReader extends ObjectReader {
+trait Amf0StringReader {
 
-  override def read(typeId: Byte, bufferItr: ByteIterator): String = {
+  def readString(bufferItr: ByteIterator):String = {
 
     val len = bufferItr.getShort
     val bytes = new Array[Byte](len)
@@ -17,5 +14,15 @@ class StringReader extends ObjectReader {
 
     new String(bytes)
   }
+
+}
+
+
+/**
+ * AMF0 String reader
+ */
+class StringReader extends AmfObjectReader with Amf0StringReader {
+
+  override def read(typeId: Byte, bufferItr: ByteIterator): String = readString(bufferItr)
 
 }

@@ -1,10 +1,12 @@
 package rtmp.packet
 
 import akka.util.ByteString
+
 import rtmp.amf._
+import rtmp.amf.amf3.{Amf3Types, Amf3Deserializer}
+import rtmp.amf.amf0.{Amf0Types, Amf0Deserializer}
+
 import rtmp.packet.Invoke
-import rtmp.amf.amf3.Amf3Deserializer
-import rtmp.amf.amf0.Amf0Deserializer
 
 /**
  * Decoder for Invoke packets
@@ -18,7 +20,7 @@ class InvokeDecoder extends PacketDecoder {
       val deserializer = new Amf3Deserializer(data.iterator)
 
       // for response, the action string and invokeId is always encoded as AMF0 we use the first byte to decide which encoding to use.
-      if (data.head!=AMF.TYPE_AMF3_OBJECT) {
+      if (data.head!=Amf0Types.TYPE_AMF3_OBJECT) {
         deserializer.forceAmf0 = true
       }
 

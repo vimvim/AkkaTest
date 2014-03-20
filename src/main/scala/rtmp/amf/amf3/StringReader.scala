@@ -7,14 +7,14 @@ import scala.collection.mutable
 
 import akka.util.ByteIterator
 
-import rtmp.amf.ObjectReader
+import rtmp.amf.AmfObjectReader
 
 
 
 /**
  * AMF3 String reader
  */
-class StringReader(stringsRefs:mutable.MutableList[String]) extends ObjectReader with Amf3IntegerReader {
+class StringReader(stringsRefs:mutable.MutableList[String]) extends AmfObjectReader with Amf3IntegerReader {
 
   /**
    * UTF-8 is used
