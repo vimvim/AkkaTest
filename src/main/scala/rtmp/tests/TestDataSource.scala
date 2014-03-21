@@ -1,10 +1,10 @@
 package rtmp.tests
 
-import akka.util.{CompactByteString, ByteString}
-
 import java.security.{PrivateKey, PublicKey, KeyFactory, KeyPair}
 import java.io.{FileNotFoundException, FileInputStream, File}
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
+
+import akka.util.{ByteStringBuilder, ByteIterator, CompactByteString, ByteString}
 
 import rtmp.HandshakeDataProvider
 
@@ -16,6 +16,8 @@ class TestDataSource(path:String) extends HandshakeDataProvider {
 
   var inputIdx = 1
   var outputIdx = 1
+
+  var outputDataItr:Option[ByteIterator] = None
 
   def getKeyPair: KeyPair = {
 
@@ -44,14 +46,61 @@ class TestDataSource(path:String) extends HandshakeDataProvider {
   def getInputChunk:Option[ByteString] = {
 
     try {
-      val
-    }
 
+      val bytes = readPacket("in", inputIdx)
+      inputIdx = inputIdx + 1
+
+      Some(CompactByteString(bytes))
+
+    } catch {
+      case ex:FileNotFoundException => None
+    }
   }
 
   def getOutputChunk(size:Int):ByteString = {
 
+    def readChunk(builder:ByteStringBuilder, dataItrHolder:Option[ByteIterator]):Option[ByteIterator] = {
 
+      if (builder.length==size) {
+        // Builder have enough data
+
+        dataItrHolder
+      } else {
+        // Builder is not have enough data
+
+        dataItrHolder match {
+
+          case Some(dataItr) =>
+            // Some data already read
+
+            val toRead = if (dataItr.length>=size) size else dataItr.length
+
+            val chunk = new Array[Byte](toRead)
+            dataItr.getBytes(chunk)
+
+            builder.append(CompactByteString(chunk))
+
+            if (dataItr.length==0) {
+              readChunk(builder, None)
+            } else {
+              readChunk(builder, Some(dataItr))
+            }
+
+          case None =>
+            // Needs to read next data chunk
+
+            val chunk = CompactByteString(readPacket("out", outputIdx))
+            outputIdx = outputIdx + 1
+
+            Some(chunk.iterator)
+        }
+      }
+    }
+
+    val builder = ByteString.newBuilder
+    outputDataItr = readChunk(builder, outputDataItr)
+
+    builder.result()
   }
 
   def readPacket(direction:String, sqNum:Int):Array[Byte] = {
