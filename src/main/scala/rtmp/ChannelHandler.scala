@@ -1,30 +1,40 @@
 package rtmp
 
-import akka.actor.{ActorLogging, Actor}
+import akka.actor.{ActorRef, ActorLogging, Actor}
 import akka.util.{CompactByteString, ByteString}
 
 import rtmp.header._
-import rtmp.header.FullHeader
-import rtmp.header.ExtendedBasicHeader
-import rtmp.header.ShortHeader
+import rtmp.packet._
 import rtmp.ChunkReceived
-import rtmp.protocol.Constants
+import rtmp.header.FullHeader
+import rtmp.header.ShortHeader
+import rtmp.header.BasicHeader
+import rtmp.header.ExtendedBasicHeader
+import rtmp.amf.AMF3Encoding
 
 case class ChunkReceived(header:Header, data:ByteString)
 
 /**
  * Actor will handle data chunks for single RTMP communication channel
+ *
+ * @param streamID        Channel ID
+ * @param messageHandler  Upstream message handler
  */
-class ChannelHandler(val streamID:Int) extends Actor with ActorLogging {
+class ChannelHandler(val streamID:Int, val messageHandler:ActorRef) extends Actor with ActorLogging {
+
+  val decoders = Map[Byte, PacketDecoder](
+    PacketTypes.TYPE_INVOKE -> new InvokeDecoder(),
+    PacketTypes.TYPE_NOTIFY -> new NotifyDecoder(),
+    PacketTypes.TYPE_AUDIO_DATA -> new AudioDecoder(),
+    PacketTypes.TYPE_VIDEO_DATA -> new VideoDecoder()
+  )
 
   var timestamp:Int = 0
-  var timeDelta:Int = 0
   var extendedTime:Int = 0
-  var length:Int = 0
-  var typeID:Byte = 0
   var messageSID:Int = 0
 
-  var readRemaining:Int = 0
+  var typeID:Byte = 0
+  var length:Int = 0
   var packetData:ByteString = CompactByteString()
 
   def receive: Actor.Receive = {
@@ -59,93 +69,20 @@ class ChannelHandler(val streamID:Int) extends Actor with ActorLogging {
     packetData = packetData.concat(data)
     if (packetData.length==length) {
 
+      log.debug("Packet received. Type: Size:")
 
+      decoders.get(typeID) match {
+        case Some(decoder) =>
 
-    }
-  }
+          val packet = decoder.decode(new AMF3Encoding(), packetData)
+          log.debug("Packet decoded: ")
 
-  def decodePacket() = {
+          messageHandler ! new Message(streamID, timestamp, extendedTime, messageSID, packet)
 
-    // TODO: For testing at this moment we only need to support INVOKE, NOTIFY, VIDEO DATA decoders
-    // TODO: Resulting packet needs to be sent to the ClientHandler ( actor which is coordinate all actors for client )
-
-
-    /*
-    typeID match {
-      case Constants.TYPE_INVOKE =>
-        if (log.isDebugEnabled) log.debug("Packet type: Invoke");
-        // message = decodeInvoke(conn.getEncoding(), in);
-
-      case Constants.TYPE_NOTIFY =>
-        if (log.isDebugEnabled()) log.debug("Packet type: Notify");
-      if (header.getStreamId() == 0) {
-        message = decodeNotify(conn.getEncoding(), in, header);
-      } else {
-        message = decodeStreamMetadata(in);
+        case None => log.debug("Packet decoder is not found. Type: ")
       }
-      break;
-      case TYPE_AUDIO_DATA:
-      if (log.isTraceEnabled()) log.trace("Packet type: Audio data");
-      message = decodeAudioData(in);
-      message.setSourceType(Constants.SOURCE_TYPE_LIVE);
-      break;
-      case TYPE_VIDEO_DATA:
-      if (log.isTraceEnabled()) log.trace("Packet type: Video data");
-      message = decodeVideoData(in);
-      message.setSourceType(Constants.SOURCE_TYPE_LIVE);
-      break;
-      case TYPE_AGGREGATE:
-      if (log.isTraceEnabled()) log.trace("Packet type: Aggregate");
-      message = decodeAggregate(in);
-      break;
-      case TYPE_FLEX_SHARED_OBJECT: // represents an SO in an AMF3 container
-      if (log.isTraceEnabled()) log.trace("Packet type: Flex shared object");
-      message = decodeFlexSharedObject(in);
-      break;
-      case TYPE_SHARED_OBJECT:
-      if (log.isTraceEnabled()) log.trace("Packet type: Shared object");
-      message = decodeSharedObject(in);
-      break;
-      case TYPE_FLEX_MESSAGE:
-      if (log.isTraceEnabled()) log.trace("Packet type: Flex message");
-      message = decodeFlexMessage(in);
-      break;
-      case TYPE_FLEX_STREAM_SEND:
-      if (log.isTraceEnabled()) log.trace("Packet type: Flex stream send");
-      message = decodeFlexStreamSend(in);
-      break;
-      case TYPE_PING:
-      if (log.isTraceEnabled()) log.trace("Packet type: Ping");
-      message = decodePing(in);
-      break;
-      case TYPE_BYTES_READ:
-      if (log.isTraceEnabled()) log.trace("Packet type: Bytes read");
-      message = decodeBytesRead(in);
-      break;
-      case TYPE_CHUNK_SIZE:
-      if (log.isTraceEnabled()) log.trace("Packet type: Chunk size");
-      message = decodeChunkSize(in);
-      break;
-      case TYPE_SERVER_BANDWIDTH:
-      if (log.isTraceEnabled()) log.trace("Packet type: Server bandwidth");
-      message = decodeServerBW(in);
-      break;
-      case TYPE_CLIENT_BANDWIDTH:
-      if (log.isTraceEnabled()) log.trace("Packet type: Client bandwidth");
-      message = decodeClientBW(in);
-      break;
-      case TYPE_ABORT:
-      if (log.isTraceEnabled()) log.trace("Packet type: Abort");
-      message = decodeAbort(in);
-      break;
-      default:
-        log.warn("Unknown object type: {}", dataType);
-      message = decodeUnknown(dataType, in);
-      break;
+
+      packetData = CompactByteString()
     }
-    return message;
-    */
-
   }
-
 }

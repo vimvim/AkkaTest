@@ -1,29 +1,37 @@
 package rtmp
 
-import akka.actor.{ Actor, ActorRef, Props }
-import akka.io.{ IO, Tcp }
-import akka.util.ByteString
 import java.net.InetSocketAddress
+import akka.util.ByteString
+
+import akka.actor.{ActorLogging, Actor, ActorRef, Props}
+import akka.io.{ IO, Tcp }
+
 
 /**
  *
  */
-class Server extends Actor {
+class Server extends Actor  with ActorLogging {
 
   import Tcp._
   import context.system
 
-  IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", 0))
+  IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", 2222))
 
   def receive = {
     case b @ Bound(localAddress) ⇒
-    // do some logging or setup ...
+      log.info("Bound to interface")
 
     case CommandFailed(_: Bind) ⇒ context stop self
 
     case c @ Connected(remote, local) ⇒
-      val handler = context.actorOf(Props[ConnHandler])
+
+      log.info("Connected: "+remote)
+
       val connection = sender
+
+      val clientHandler = context.actorOf(Props(classOf[ClientHandler], connection, remote))
+
+      val handler = context.actorOf(Props(classOf[ConnHandler], connection, remote, clientHandler))
       connection ! Register(handler)
   }
 }

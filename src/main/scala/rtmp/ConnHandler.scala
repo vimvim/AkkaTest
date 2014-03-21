@@ -26,7 +26,6 @@ import rtmp.ReceiveBodyData
 import rtmp.Handshake
 
 
-
 // ConnHandler messages
 object ProcessBuffer
 
@@ -55,10 +54,16 @@ class ChannelInfo(var channelHandler:ActorRef, var packetSize:Int) {
 
 
 /**
+ * Handle incoming binary data received from connection
  *
  * TODO: Check how and where new byte buffers is created and optimize it.
+ *
+ * @param connection        Underlined connection
+ * @param remote            Remote peer address info
+ * @param messageHandler    Upstream message handler
+ *
  */
-class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor with FSM[ConnState, Data] with ActorLogging  {
+class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandler:ActorRef) extends Actor with FSM[ConnState, Data] with ActorLogging  {
 
   type DataFunc = (ByteString) => Data
 
@@ -73,6 +78,8 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
 
   val channels = new MutableMap[Int,ChannelInfo]()
   var chunkSize = 128
+
+  messageHandler ! RegisterHandler(this.self)
 
   startWith(HandshakeGet, Handshake(CompactByteString("")))
 
@@ -178,7 +185,7 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
 
           case None =>
 
-            val channelHandler = context.system.actorOf()
+            val channelHandler = context.actorOf(Props(classOf[ChannelHandler], connection, remote))
             val channelInfo = new ChannelInfo(channelHandler, length)
 
             channels.put(streamID, channelInfo)
@@ -196,74 +203,6 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor
         }
     }
   }
-
-
-  /*
-  def processBody2(bufferItr:ByteIterator, header:Header):(ConnState, DataFunc) = {
-
-    header match {
-      case FullHeader(streamID, timestamp, extendedTime, length, typeID, messageSID) =>
-
-        channels.get(streamID) match {
-          case Some(channelInfo) =>
-
-            if (channelInfo.packetSize!=length) {
-              channelInfo.packetSize = length
-              channelInfo.readRemaining = 0
-            }
-
-            val toReceive = if ((readRemaining > chunkSize)) chunkSize else readRemaining
-
-            appendAndProcess(data, buffer, 1, decodeHeader,
-              (restBuffer)=> stay using Handshake(restBuffer)
-            )
-
-          case None =>
-
-            val channelHandler = context.system.actorOf()
-            channels.put(streamID, ChannelInfo(channelHandler, length))
-
-        }
-
-      case _ =>
-
-        channels.get(header.streamID) match {
-          case Some(channelInfo) =>
-
-          case None =>
-            // There is no channel info. Needs to close this connection.
-            close
-        }
-    }
-  }
-  */
-
-  /*
-  def processBodyData(bufferItr:ByteIterator, header:Header, channelInfo:ChannelInfo):(ConnState, DataFunc) = {
-
-    val toRead = if (channelInfo.readRemaining > chunkSize) chunkSize else channelInfo.readRemaining
-
-    if (bufferItr.len<toRead) {
-
-      (ReceiveBody, (buffer)=>{
-        ReceiveBodyData(header, buffer)
-      })
-
-    } else {
-
-      val packetData = new Array[Byte](toRead)
-      bufferItr.getBytes(packetData)
-
-      channelInfo.readRemaining = channelInfo.readRemaining + toRead
-
-      channelInfo.channelHandler ! ChunkReceived(header, CompactByteString(packetData))
-
-      (ReceiveHeader, (buffer)=>{
-        Handshake(buffer)
-      })
-    }
-  }
-  */
 
   def handshake(bufferItr:ByteIterator):(ConnState, DataFunc) = {
 
