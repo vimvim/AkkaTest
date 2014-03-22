@@ -6,8 +6,6 @@ import rtmp.amf._
 import rtmp.amf.amf3.{Amf3Types, Amf3Deserializer}
 import rtmp.amf.amf0.{Amf0Types, Amf0Deserializer}
 
-import rtmp.packet.Invoke
-
 /**
  * Decoder for Invoke packets
  */

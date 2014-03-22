@@ -1,11 +1,14 @@
 package rtmp.amf.amf3
 
-import akka.util.ByteIterator
-import rtmp.amf.{AmfObjectReader, Deserializer}
-import scala.collection.immutable.HashMap
-import rtmp.amf.amf0.{Amf0Deserializer, DoubleReader, NullReader}
 import scala.collection.mutable.LinkedList
 import scala.collection.mutable
+import scala.collection.immutable.HashMap
+
+import akka.util.ByteIterator
+
+import rtmp.amf.{AmfObjectReader, Deserializer}
+import rtmp.amf.amf0.{Amf0Deserializer, DoubleReader, NullReader}
+
 
 /**
  * AMF3 deserializer
@@ -17,7 +20,7 @@ class Amf3Deserializer(bufferItr:ByteIterator) extends Amf0Deserializer(bufferIt
   // Will force readString and readInteger to AMF0
   var forceAmf0:Boolean = false
 
-  def readers = HashMap[Int, AmfObjectReader](
+  private def readers = HashMap[Int, AmfObjectReader](
     (Amf3Types.TYPE_UNDEFINED, new NullReader()),
     (Amf3Types.TYPE_INTEGER, new IntegerReader()),
     (Amf3Types.TYPE_NUMBER, new DoubleReader()),

@@ -22,8 +22,6 @@ import rtmp.protocol.v2.handshake.{Constants, Crypto}
 import rtmp.protocol.BaseProtocol
 import rtmp.protocol.v2.handshake.Crypto
 import rtmp.header._
-import rtmp.ReceiveBodyData
-import rtmp.Handshake
 
 
 // ConnHandler messages
@@ -92,7 +90,11 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
   }
 
   when(HandshakeConfirm) {
-    case Event(Received(data), Handshake) ⇒ stay()
+    case Event(Received(data), Handshake(buffer)) ⇒
+
+      appendAndProcess(data, buffer, Constants.HANDSHAKE_SIZE, handshakeResponse, (buffer)=>{
+        stay using Handshake(buffer)
+      })
   }
 
   when(ReceiveHeader) {
@@ -228,6 +230,21 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
 
     // goto(HandshakeConfirm) using Handshake(buffer)
     (HandshakeConfirm, (buffer)=>{
+      Handshake(buffer)
+    })
+  }
+
+  /**
+   * Process handshake response received from client
+   *
+   * @param bufferItr
+   * @return
+   */
+  def handshakeResponse(bufferItr:ByteIterator):(ConnState, DataFunc) = {
+
+    bufferItr.drop(Constants.HANDSHAKE_SIZE)
+
+    (ReceiveHeader, (buffer)=>{
       Handshake(buffer)
     })
   }

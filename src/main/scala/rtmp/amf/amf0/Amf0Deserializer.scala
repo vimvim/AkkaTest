@@ -11,12 +11,15 @@ import rtmp.amf.{AmfObjectReader, Deserializer}
  */
 class Amf0Deserializer(bufferItr:ByteIterator) extends Deserializer(bufferItr) {
 
-  def readers = HashMap[Int, AmfObjectReader](
+  // References to the objects created during packet deserialization
+  val objectRefs = new ObjectReferences()
+
+  private def readers = HashMap[Int, AmfObjectReader](
     (Amf0Types.TYPE_UNDEFINED, new NullReader()),
     (Amf0Types.TYPE_NUMBER, new DoubleReader()),
     (Amf0Types.TYPE_STRING, new StringReader()),
     (Amf0Types.TYPE_BOOLEAN, new BooleanReader()),
-    (Amf0Types.TYPE_OBJECT, new ObjectReader()),
+    (Amf0Types.TYPE_OBJECT, new ObjectReader(this, objectRefs)),
     (Amf0Types.TYPE_OBJECT, new EndObjectReader())
   )
 
@@ -24,7 +27,7 @@ class Amf0Deserializer(bufferItr:ByteIterator) extends Deserializer(bufferItr) {
 
     readers.get(typeId) match {
       case Some(reader) => reader
-      case None => super.getObjectReader(typeId)
+      case None => throw new Exception("Unable to get object reader. typeId: "+typeId)
     }
   }
 }

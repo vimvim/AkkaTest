@@ -5,7 +5,6 @@ import akka.util.{CompactByteString, ByteString}
 
 import rtmp.header._
 import rtmp.packet._
-import rtmp.ChunkReceived
 import rtmp.header.FullHeader
 import rtmp.header.ShortHeader
 import rtmp.header.BasicHeader

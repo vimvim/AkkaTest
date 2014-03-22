@@ -1,6 +1,7 @@
 package rtmp.header
 
 import akka.util.ByteIterator
+import java.nio.ByteOrder
 
 /**
  * Decode basic header with timestamp ( 0x02 )
@@ -31,6 +32,6 @@ class ExtBasicHeaderDecoder extends HeaderDecoder {
   }
 
   protected def decodeExtendedTime(bufferItr: ByteIterator):Int = {
-    bufferItr.getInt & Integer.MAX_VALUE
+    bufferItr.getInt(ByteOrder.BIG_ENDIAN) & Integer.MAX_VALUE
   }
 }

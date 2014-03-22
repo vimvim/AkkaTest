@@ -8,7 +8,7 @@ import rtmp.amf.{AmfObjectEnd, Deserializer, AmfObjectReader}
 /**
  * AMF0 Object reader
  */
-class ObjectReader(deserializer:Deserializer) extends AmfObjectReader with Amf0StringReader {
+class ObjectReader(deserializer:Deserializer, objRefs:ObjectReferences) extends AmfObjectReader with Amf0StringReader {
 
   override def read(typeId: Byte, bufferItr: ByteIterator): Map[String, Any] = {
     readProperty(Map(), bufferItr)
