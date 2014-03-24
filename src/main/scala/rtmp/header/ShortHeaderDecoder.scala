@@ -25,9 +25,9 @@ class ShortHeaderDecoder extends ExtBasicHeaderDecoder {
 
   protected def decodeSize(bufferItr: ByteIterator):Int = {
 
-    val b1 = bufferItr.getByte
-    val b2 = bufferItr.getByte
-    val b3 = bufferItr.getByte
+    val b1 = bufferItr.getByte & 0xff
+    val b2 = bufferItr.getByte & 0xff
+    val b3 = bufferItr.getByte & 0xff
 
     (b1 << 16) + (b2 << 8) + b3
   }

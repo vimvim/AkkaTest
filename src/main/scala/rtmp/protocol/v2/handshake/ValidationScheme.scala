@@ -1,9 +1,11 @@
 package rtmp.protocol.v2.handshake
 
+import akka.event.LoggingAdapter
+
 /**
  *
  */
-abstract class ValidationScheme(val id:Int) {
+abstract class ValidationScheme(val id:Int, implicit val log:LoggingAdapter) {
 
   /**
    * Validate current scheme against passed data
@@ -16,11 +18,21 @@ abstract class ValidationScheme(val id:Int) {
 
     val digestOffset = getDigestOffset(input)
 
-    // log.debug("Scheme: {} client digest offset: {}", scheme, digestOffset)
+    val length = Constants.HANDSHAKE_SIZE - digestOffset - Constants.DIGEST_LENGTH
+
+    log.debug("Validate scheme: {} digest offset: {} length:{}", id, digestOffset, length)
 
     val tempBuffer: Array[Byte] = new Array[Byte](Constants.HANDSHAKE_SIZE - Constants.DIGEST_LENGTH)
+
+    if (digestOffset>=tempBuffer.length) {
+      false
+    }
     System.arraycopy(input, 0, tempBuffer, 0, digestOffset)
-    System.arraycopy(input, digestOffset + Constants.DIGEST_LENGTH, tempBuffer, digestOffset, Constants.HANDSHAKE_SIZE - digestOffset - Constants.DIGEST_LENGTH)
+
+    if (digestOffset>=tempBuffer.length) {
+      false
+    }
+    System.arraycopy(input, digestOffset + Constants.DIGEST_LENGTH, tempBuffer, digestOffset, length)
 
     val tempHash: Array[Byte] = Crypto.calculateHMAC_SHA256(tempBuffer, Constants.GENUINE_FP_KEY, 30)
 

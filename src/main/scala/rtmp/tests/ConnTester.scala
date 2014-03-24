@@ -19,7 +19,7 @@ class ConnTester (testSource:TestDataSource, implicit val system:ActorSystem) {
   val connProbe = TestProbe()
   val clientHandlerProbe = TestProbe()
 
-  val connActor:TestActorRef[ConnHandler] = TestFSMRef(new ConnHandler(connProbe.ref, new InetSocketAddress(0), clientHandlerProbe.ref))
+  val connActor:TestActorRef[ConnHandler] = TestFSMRef(new ConnHandler(connProbe.ref, new InetSocketAddress(0), clientHandlerProbe.ref, testSource))
 
   def testActor() {
 
@@ -42,7 +42,7 @@ class ConnTester (testSource:TestDataSource, implicit val system:ActorSystem) {
 
                 val testData = testSource.getOutputChunk(outputValue.length)
                 if (!testData.sameElements(outputValue)) {
-                  throw new Exception("Test data not match");
+                  throw new Exception("Test data not match")
                 }
               }
             }

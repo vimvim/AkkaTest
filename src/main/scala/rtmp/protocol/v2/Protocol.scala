@@ -30,9 +30,9 @@ class Protocol(keys: KeyPair, randBytes1:Array[Byte], randBytes2:Array[Byte])(im
 
     log.debug("Public key bytes:{} ", HexBytesUtil.bytes2hex(publicKey))
 
-    val data = input.slice(1, input.length)
+    // val data = input.slice(1, input.length)
 
-    val request = new Request(data)
+    val request = new Request(input)
 
     new rtmp.protocol.v2.handshake.Response(3, request.validationScheme, publicKey, request.key, randBytes1, randBytes2)
   }

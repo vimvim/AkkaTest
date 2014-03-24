@@ -47,7 +47,7 @@ case class ReceiveBodyData(header:Header, buffer:ByteString) extends Data
 
 
 class ChannelInfo(var channelHandler:ActorRef, var packetSize:Int) {
-  var readRemaining:Int = 0
+  var readRemaining:Int = packetSize
 }
 
 
@@ -61,7 +61,8 @@ class ChannelInfo(var channelHandler:ActorRef, var packetSize:Int) {
  * @param messageHandler    Upstream message handler
  *
  */
-class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandler:ActorRef) extends Actor with FSM[ConnState, Data] with ActorLogging  {
+class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandler:ActorRef, handshakeData:HandshakeDataProvider)
+  extends Actor with FSM[ConnState, Data] with ActorLogging  {
 
   type DataFunc = (ByteString) => Data
 
@@ -84,7 +85,7 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
   when(HandshakeGet) {
     case Event(Received(data), Handshake(buffer)) ⇒
 
-      appendAndProcess(data, buffer, Constants.HANDSHAKE_SIZE, handshake, (buffer)=>{
+      appendAndProcess(data, buffer, Constants.HANDSHAKE_SIZE+1, handshake, (buffer)=>{
         stay using Handshake(buffer)
       })
   }
@@ -187,7 +188,7 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
 
           case None =>
 
-            val channelHandler = context.actorOf(Props(classOf[ChannelHandler], connection, remote))
+            val channelHandler = context.actorOf(Props(classOf[ChannelHandler], streamID, messageHandler))
             val channelInfo = new ChannelInfo(channelHandler, length)
 
             channels.put(streamID, channelInfo)
@@ -208,10 +209,11 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
 
   def handshake(bufferItr:ByteIterator):(ConnState, DataFunc) = {
 
+    val handshakeType = bufferItr.getByte
+
     val input = Array.ofDim[Byte](Constants.HANDSHAKE_SIZE)
     bufferItr.getBytes(input)
 
-    val handshakeType = input(0)
     val versionByte = input(4)
 
     if (log.isDebugEnabled) {
@@ -326,6 +328,7 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
 
       case 0x03 =>
 
+        /*
         val random: Random = new Random
 
         val keyPair = Crypto.generateKeyPair
@@ -335,10 +338,15 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
 
         val randBytes2: Array[Byte] = new Array[Byte](Constants.HANDSHAKE_SIZE - Constants.DIGEST_LENGTH)
         random.nextBytes(randBytes2)
+        */
+
+        val keyPair = handshakeData.getKeyPair
+        val rand1 = handshakeData.getRand1
+        val rand2 = handshakeData.getRand2
 
         implicit val log = this.log
 
-        new rtmp.v2.Protocol(keyPair, randBytes1, randBytes2)
+        new rtmp.v2.Protocol(keyPair, rand1, rand2)
 
       case 0x06 => throw new Exception("Encrypted connections is not supported yet {}")
       case _ => throw new Exception(s"Unsupported handshake version specified $handshakeVersion ")

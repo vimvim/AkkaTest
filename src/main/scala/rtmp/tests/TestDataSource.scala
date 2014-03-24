@@ -73,14 +73,16 @@ class TestDataSource(path:String) extends HandshakeDataProvider {
           case Some(dataItr) =>
             // Some data already read
 
-            val toRead = if (dataItr.length>=size) size else dataItr.length
+
+
+            val toRead = if (dataItr.len>=size) size else dataItr.len
 
             val chunk = new Array[Byte](toRead)
             dataItr.getBytes(chunk)
 
             builder.append(CompactByteString(chunk))
 
-            if (dataItr.length==0) {
+            if (dataItr.len==0) {
               readChunk(builder, None)
             } else {
               readChunk(builder, Some(dataItr))
@@ -92,7 +94,7 @@ class TestDataSource(path:String) extends HandshakeDataProvider {
             val chunk = CompactByteString(readPacket("out", outputIdx))
             outputIdx = outputIdx + 1
 
-            Some(chunk.iterator)
+            readChunk(builder, Some(chunk.iterator))
         }
       }
     }

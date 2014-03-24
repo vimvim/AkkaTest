@@ -29,10 +29,10 @@ class FullHeaderDecoder extends ShortHeaderDecoder {
 
   protected def decodeMessageSID(bufferItr: ByteIterator):Int = {
 
-    val b1 = bufferItr.getByte
-    val b2 = bufferItr.getByte
-    val b3 = bufferItr.getByte
-    val b4 = bufferItr.getByte
+    val b1 = bufferItr.getByte & 0xff
+    val b2 = bufferItr.getByte & 0xff
+    val b3 = bufferItr.getByte & 0xff
+    val b4 = bufferItr.getByte & 0xff
 
     (b4 << 24) + (b3 << 16) + (b2 << 8) + b1
   }
