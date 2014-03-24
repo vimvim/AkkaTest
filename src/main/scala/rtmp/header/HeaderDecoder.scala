@@ -9,8 +9,7 @@ import java.nio.ByteOrder
  */
 abstract class HeaderDecoder {
 
-
-  def decode(firstByte:Byte,bufferItr: ByteIterator): Header
+  def decode(firstByte:Int, bufferItr: ByteIterator): Header
 
   /**
    * Decode stream id from header
@@ -22,7 +21,7 @@ abstract class HeaderDecoder {
    * @param bufferItr
    * @return
    */
-  protected def decodeSID(firstByte:Byte, bufferItr:ByteIterator):Int = {
+  protected def decodeSID(firstByte:Int, bufferItr:ByteIterator):Int = {
 
     val sidFirstBits = firstByte & 0x3f
 

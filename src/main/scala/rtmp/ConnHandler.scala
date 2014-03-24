@@ -146,7 +146,7 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
           val packetData = new Array[Byte](readSize)
           bufferItr.getBytes(packetData)
 
-          channelInfo.readRemaining = channelInfo.readRemaining + readSize
+          channelInfo.readRemaining = channelInfo.readRemaining - readSize
 
           channelInfo.channelHandler ! ChunkReceived(header, CompactByteString(packetData))
 
@@ -259,7 +259,7 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
    */
   def decodeHeader(bufferItr:ByteIterator):(ConnState, DataFunc) = {
 
-    val firstByte = bufferItr.getByte
+    val firstByte = bufferItr.getByte & 0xff
 
     val headerDecoder = getHeaderDecoder(firstByte)
     val header = headerDecoder.decode(firstByte, bufferItr)
@@ -353,7 +353,7 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
     }
   }
 
-  def getHeaderDecoder(firstByte:Byte):HeaderDecoder = {
+  def getHeaderDecoder(firstByte:Int):HeaderDecoder = {
 
     val headerType = firstByte >> 6
     headerDecoders.get(headerType) match {

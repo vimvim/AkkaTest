@@ -11,7 +11,7 @@ import akka.util.ByteIterator
  */
 class FullHeaderDecoder extends ShortHeaderDecoder {
 
-  override def decode(firstByte:Byte, bufferItr: ByteIterator): Header = {
+  override def decode(firstByte:Int, bufferItr: ByteIterator): Header = {
 
     val sid = decodeSID(firstByte, bufferItr)
     val timestamp = decodeTime(bufferItr)

@@ -8,7 +8,7 @@ import akka.util.ByteIterator
  */
 class BasicHeaderDecoder extends HeaderDecoder {
 
-  override def decode(firstByte: Byte, bufferItr: ByteIterator): Header = {
+  override def decode(firstByte: Int, bufferItr: ByteIterator): Header = {
 
     val sid = decodeSID(firstByte, bufferItr)
     BasicHeader(sid)

@@ -9,7 +9,7 @@ import java.nio.ByteOrder
  */
 class ExtBasicHeaderDecoder extends HeaderDecoder {
 
-  def decode(firstByte:Byte, bufferItr: ByteIterator): Header = {
+  def decode(firstByte:Int, bufferItr: ByteIterator): Header = {
 
     val sid = decodeSID(firstByte, bufferItr)
     val timeDelta = decodeTime(bufferItr)
