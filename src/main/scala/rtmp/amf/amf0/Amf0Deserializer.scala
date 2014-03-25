@@ -15,6 +15,7 @@ class Amf0Deserializer(bufferItr:ByteIterator) extends Deserializer(bufferItr) {
   val objectRefs = new ObjectReferences()
 
   private def readers = HashMap[Int, AmfObjectReader](
+    (Amf0Types.TYPE_NULL, new NullReader()),
     (Amf0Types.TYPE_UNDEFINED, new NullReader()),
     (Amf0Types.TYPE_NUMBER, new DoubleReader()),
     (Amf0Types.TYPE_STRING, new StringReader()),
