@@ -9,7 +9,7 @@ import rtmp.header.FullHeader
 import rtmp.header.ShortHeader
 import rtmp.header.BasicHeader
 import rtmp.header.ExtendedBasicHeader
-import rtmp.amf.AMF3Encoding
+import rtmp.amf.{AMF0Encoding, AMF3Encoding}
 
 case class ChunkReceived(header:Header, data:ByteString)
 
@@ -22,7 +22,7 @@ case class ChunkReceived(header:Header, data:ByteString)
 class ChannelHandler(val streamID:Int, val messageHandler:ActorRef) extends Actor with ActorLogging {
 
   val decoders = Map[Byte, PacketDecoder](
-    PacketTypes.TYPE_INVOKE -> new InvokeDecoder(),
+    PacketTypes.TYPE_INVOKE -> new InvokeDecoder(log),
     PacketTypes.TYPE_NOTIFY -> new NotifyDecoder(),
     PacketTypes.TYPE_AUDIO_DATA -> new AudioDecoder(),
     PacketTypes.TYPE_VIDEO_DATA -> new VideoDecoder()
@@ -44,6 +44,8 @@ class ChannelHandler(val streamID:Int, val messageHandler:ActorRef) extends Acto
 
   def processChunk(header:Header, data:ByteString) = {
 
+    log.debug("Got new packet chunk {} size {} of {}", header, data.length, length)
+
     header match {
       case FullHeader(hStreamID, hTimestamp, hExtendedTime, hLength, hTypeID, hMessageSID) =>
         timestamp = hTimestamp
@@ -51,6 +53,7 @@ class ChannelHandler(val streamID:Int, val messageHandler:ActorRef) extends Acto
         length = hLength
         typeID = hTypeID
         messageSID = hMessageSID
+
 
       case ShortHeader(hStreamID, hTimeDelta, hExtendedTimeDelta, hLength, hTypeID) =>
         // timeDelta = hTimeDelta
@@ -68,17 +71,17 @@ class ChannelHandler(val streamID:Int, val messageHandler:ActorRef) extends Acto
     packetData = packetData.concat(data)
     if (packetData.length==length) {
 
-      log.debug("Packet received. Type: Size:")
+      log.debug("Full packet data received. Size:{}", length)
 
       decoders.get(typeID) match {
         case Some(decoder) =>
 
-          val packet = decoder.decode(new AMF3Encoding(), packetData)
+          val packet = decoder.decode(new AMF0Encoding(), packetData)
           log.debug("Packet decoded: ")
 
           messageHandler ! new Message(streamID, timestamp, extendedTime, messageSID, packet)
 
-        case None => log.debug("Packet decoder is not found. Type: ")
+        case None => log.debug("Packet decoder is not found. Type: {} ", typeID)
       }
 
       packetData = CompactByteString()

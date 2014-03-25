@@ -5,11 +5,12 @@ import akka.util.ByteString
 import rtmp.amf._
 import rtmp.amf.amf3.{Amf3Types, Amf3Deserializer}
 import rtmp.amf.amf0.{Amf0Types, Amf0Deserializer}
+import akka.event.LoggingAdapter
 
 /**
  * Decoder for Invoke packets
  */
-class InvokeDecoder extends PacketDecoder {
+class InvokeDecoder(val log:LoggingAdapter) extends PacketDecoder {
 
   def decode(encodingType: EncodingType, data: ByteString): Packet = {
 
@@ -36,12 +37,16 @@ class InvokeDecoder extends PacketDecoder {
     val action = deserializer.readObject[String]
     val invokeId = deserializer.readObject[Int]
 
+    log.debug("Invoke {} {}", action, invokeId)
+
     deserializer match {
       case amf3Deserializer: Amf3Deserializer => amf3Deserializer.forceAmf0 = false
       case _ =>
     }
 
     val parameters = deserializer.readAll
+
+    log.debug("Invoke params {}", parameters)
 
     Invoke(action, invokeId, parameters)
   }

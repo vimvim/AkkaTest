@@ -42,4 +42,11 @@ class ClientHandler(val connection:ActorRef, val remote: InetSocketAddress) exte
     case _ =>
 
   }
+
+  private def handleMessage(msg:Message) = {
+
+    log.debug("New message {}", msg)
+
+  }
+
 }

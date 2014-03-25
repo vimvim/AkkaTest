@@ -4,15 +4,23 @@ import scala.collection.immutable.List
 import scala.collection.immutable.ListSet
 
 import akka.util.ByteIterator
+import scala.reflect._
 
 /**
  *
  */
 abstract class Deserializer(bufferItr:ByteIterator) extends Core {
 
-  def readObject[T]:T = {
+  def readObject[T: ClassTag]:T = {
+
+    val cs = implicitly[ClassTag[T]]
+
     val obj = readSomething
-    obj.asInstanceOf[T]
+    if (cs.equals(Manifest.Int) && obj.isInstanceOf[Double]) {
+      obj.asInstanceOf[Double].toInt.asInstanceOf[T]
+    } else {
+      obj.asInstanceOf[T]
+    }
   }
 
   def readSomething:Any = {

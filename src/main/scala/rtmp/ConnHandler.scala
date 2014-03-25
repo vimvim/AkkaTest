@@ -140,13 +140,18 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
       case Some(channelInfo:ChannelInfo) =>
 
         val readSize = getReadSize(channelInfo)
+        log.debug("Read body bytes: {}", readSize)
 
         processBuffer(buffer, readSize, (bufferItr)=>{
+
+          log.debug("Got body bytes: {}", readSize)
 
           val packetData = new Array[Byte](readSize)
           bufferItr.getBytes(packetData)
 
           channelInfo.readRemaining = channelInfo.readRemaining - readSize
+
+          log.debug("Remaining body bytes: {}", channelInfo.readRemaining)
 
           channelInfo.channelHandler ! ChunkReceived(header, CompactByteString(packetData))
 
@@ -181,19 +186,39 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
 
             if (channelInfo.packetSize!=length) {
               channelInfo.packetSize = length
-              channelInfo.readRemaining = 0
+              channelInfo.readRemaining = length
             }
 
             Some(channelInfo)
 
           case None =>
 
-            val channelHandler = context.actorOf(Props(classOf[ChannelHandler], streamID, messageHandler))
+            val channelHandler = context.actorOf(Props(classOf[ChannelHandler], streamID, messageHandler), name="channel_"+streamID)
             val channelInfo = new ChannelInfo(channelHandler, length)
+
+            log.debug("Create new channel handler: {}", streamID)
 
             channels.put(streamID, channelInfo)
 
             Some(channelInfo)
+        }
+
+      case ShortHeader(streamID, timestamp, extendedTime, length, typeID) =>
+
+        channels.get(streamID) match {
+          case Some(channelInfo) =>
+
+            if (channelInfo.packetSize!=length) {
+              channelInfo.packetSize = length
+              channelInfo.readRemaining = length
+            }
+
+            Some(channelInfo)
+
+          case None =>
+
+            log.error("ShortHeader received for not-existent channel: {}", streamID)
+            throw new Exception("ShortHeader received for not-existent channel:"+streamID)
         }
 
       case _ =>
@@ -244,6 +269,8 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
    */
   def handshakeResponse(bufferItr:ByteIterator):(ConnState, DataFunc) = {
 
+    log.debug("Got handshake response")
+
     bufferItr.drop(Constants.HANDSHAKE_SIZE)
 
     (ReceiveHeader, (buffer)=>{
@@ -263,6 +290,8 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
 
     val headerDecoder = getHeaderDecoder(firstByte)
     val header = headerDecoder.decode(firstByte, bufferItr)
+
+    log.debug("Got header: {}", header)
 
     // goto(ReceiveBody) using ReceiveBodyData(bufferItr.toByteString, header)
     (ReceiveBody, (buffer)=>{
@@ -309,6 +338,8 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
       // we needs to send self message, so ensure that this data
       // will be processed after actor is going to the next state
       if (restBuffer.length>0) self ! ProcessBuffer
+
+      log.debug("Move to the state: {}", state)
 
       goto(state) using data
 
