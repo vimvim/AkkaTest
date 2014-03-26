@@ -44,7 +44,7 @@ abstract class Deserializer(bufferItr:ByteIterator) extends Core {
 
       if (hasSomething) {
         // params.::(readSomething)
-        params + readSomething
+        readNextObject(params + readSomething)
       } else {
         params
       }
