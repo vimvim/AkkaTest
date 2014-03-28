@@ -38,19 +38,19 @@ abstract class Deserializer(bufferItr:ByteIterator) extends Core {
    *
    * @return
    */
-  def readAll:ListSet[Any] = {
+  def readAll:List[Any] = {
 
-    def readNextObject(params:ListSet[Any]):ListSet[Any] = {
+    def readNextObject(params:List[Any]):List[Any] = {
 
       if (hasSomething) {
         // params.::(readSomething)
-        readNextObject(params + readSomething)
+        readNextObject(readSomething :: params)
       } else {
         params
       }
     }
 
-    readNextObject(new ListSet[Any]())
+    readNextObject(List[Any]()).reverse
   }
 
   protected def getObjectReader(typeId:Byte):AmfObjectReader

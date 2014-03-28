@@ -1,11 +1,11 @@
 package rtmp.packet
 
 import akka.util.ByteString
+import akka.event.LoggingAdapter
 
 import rtmp.amf._
 import rtmp.amf.amf3.{Amf3Types, Amf3Deserializer}
 import rtmp.amf.amf0.{Amf0Types, Amf0Deserializer}
-import akka.event.LoggingAdapter
 
 /**
  * Decoder for Invoke packets
