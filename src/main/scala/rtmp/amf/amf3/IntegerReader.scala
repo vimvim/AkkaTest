@@ -2,7 +2,7 @@ package rtmp.amf.amf3
 
 import akka.util.ByteIterator
 
-import rtmp.amf.{DeserializationContext, AmfObjectReader}
+import rtmp.amf.AmfObjectReader
 
 trait Amf3IntegerReader {
 

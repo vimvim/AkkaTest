@@ -1,7 +1,7 @@
 package rtmp.amf.amf0
 
 import akka.util.ByteIterator
-import rtmp.amf.{DeserializationContext, AmfObjectReader}
+import rtmp.amf.AmfObjectReader
 import java.nio.ByteOrder
 
 /**
