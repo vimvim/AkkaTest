@@ -14,42 +14,15 @@ import com.typesafe.config.impl.ConfigString
 import rtmp.v2.Protocol
 import rtmp.protocol.Response
 import utils.HexBytesUtil
+import rtmp.tests.StreamDumpReader
 
-
-/**
- * Base reader for client and server data dumps
- * 
- * @param path
- * @param direction
- */
-class DumpReader(path:String, direction:String) {
-
-  var sqNum = 0
-  
-  def readPacket():Array[Byte] = {
-    sqNum = sqNum + 1
-    readBytes(s"${direction}_$sqNum.rtmp")
-  }
-
-  protected def readBytes(fileName:String):Array[Byte] = {
-
-    val file: File = new File(path + "/"+fileName)
-
-    val fis: FileInputStream = new FileInputStream(file)
-    val data: Array[Byte] = new Array[Byte](file.length.asInstanceOf[Int])
-    fis.read(data)
-    fis.close()
-    
-    data
-  }
-}
 
 /**
  * Class used for reading dump packets sent by client.
  *
  * @param path
  */
-class ClientDumpReader(path:String) extends DumpReader(path, "in") {
+class ClientDumpReader(path:String) extends StreamDumpReader(path, "in", "rtmp", 1) {
 
   
 }
@@ -60,7 +33,7 @@ class ClientDumpReader(path:String) extends DumpReader(path, "in") {
  * 
  * @param path
  */
-class ServerDumpReader(path:String) extends DumpReader(path, "out") {
+class ServerDumpReader(path:String) extends StreamDumpReader(path, "out", "rtmp", 1) {
 
   def loadRand1():Array[Byte] = {
     readBytes("hrand1.rtmp")
