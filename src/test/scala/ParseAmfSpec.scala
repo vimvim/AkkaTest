@@ -20,7 +20,7 @@ import rtmp.amf.amf0.Amf0Deserializer
 /**
  * Testing AMF parsing
  */
-class ParseAmfSpec extends FlatSpec with ClassicMatchers {
+class ParseAmfSpec extends FlatSpec with ClassicMatchers with BinaryTester {
 
   "A parsed data in packet_invoke_connect_1.rtmp" should "match to test data" in {
 
@@ -82,24 +82,5 @@ class ParseAmfSpec extends FlatSpec with ClassicMatchers {
       "mystream.sdp",
       "live"
     ))))
-  }
-
-  private def readData(fileName:String):ByteString = {
-    ByteString.fromArray(readBytes(fileName))
-  }
-
-  protected def readBytes(fileName:String):Array[Byte] = {
-
-    val file: File = new File("dump/"+fileName)
-    if (!file.exists()) {
-      throw new FileNotFoundException(fileName)
-    }
-
-    val fis: FileInputStream = new FileInputStream(file)
-    val data: Array[Byte] = new Array[Byte](file.length.asInstanceOf[Int])
-    fis.read(data)
-    fis.close()
-
-    data
   }
 }
