@@ -69,4 +69,27 @@ class Amf0Spec extends FlatSpec with ClassicMatchers {
     )))
   }
 
+  "A serialized AMF object ( Map )" should "be correctly deserialized" in {
+
+    val builder = ByteString.newBuilder
+    val serializer = new Amf0Serializer(builder)
+
+    serializer.writeObject(Map[String,Any](
+      "prop1" -> "Value 1",
+      "prop2" -> 123,
+      "prop3" -> false
+    ))
+
+    val data = builder.result()
+    val dataItr = data.iterator
+
+    val deserializer = new Amf0Deserializer(dataItr)
+    val value = deserializer.readSomething
+
+    assert(value.equals(Map[String,Any](
+      "prop1" -> "Value 1",
+      "prop2" -> 123,
+      "prop3" -> false
+    )))
+  }
 }

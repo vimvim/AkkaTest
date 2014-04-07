@@ -14,13 +14,18 @@ class Amf0Serializer(builder:ByteStringBuilder) extends Serializer(builder) {
 
   private def writers = HashMap[Class[_], AmfObjectWriter[_]](
     (classOf[String], new StringWriter()),
+    (classOf[java.lang.String], new StringWriter()),
     (classOf[Boolean], new BooleanWriter()),
     (classOf[java.lang.Boolean], new BooleanWriter()),
     (classOf[Double], new DoubleWriter()),
-    (classOf[Integer], new IntegerWriter())
+    (classOf[Integer], new IntegerWriter()),
+    (classOf[Int], new IntegerWriter()),
+    (classOf[Map[String,Any]], new ObjectWriter(this))
   )
 
   override def writeNull(): Unit = builder.putByte(Amf0Types.TYPE_NULL)
+
+  override def writeEndObject(): Unit = builder.putByte(Amf0Types.TYPE_END_OF_OBJECT)
 
   override protected def getObjectWriter[T](cls: Class[T]): Option[AmfObjectWriter[T]] = {
 
@@ -29,7 +34,4 @@ class Amf0Serializer(builder:ByteStringBuilder) extends Serializer(builder) {
       case None => None
     }
   }
-
-  override protected def getObjectWriter: AmfObjectWriter[AnyRef] = new ObjectWriter()
-
 }
