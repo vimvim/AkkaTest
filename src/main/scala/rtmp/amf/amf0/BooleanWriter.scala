@@ -9,9 +9,8 @@ import rtmp.amf.AmfObjectWriter
  */
 class BooleanWriter extends AmfObjectWriter[Boolean] {
 
-  override def write(builder: ByteStringBuilder, obj: Boolean): Unit = {
-
-
-
+  override def write(builder: ByteStringBuilder, value: Boolean): Unit = {
+    builder.putByte(Amf0Types.TYPE_BOOLEAN)
+    if (value) builder.putByte(1) else builder.putByte(0)
   }
 }

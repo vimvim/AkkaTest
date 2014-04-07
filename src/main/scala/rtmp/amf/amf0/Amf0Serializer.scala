@@ -5,7 +5,7 @@ import scala.collection.immutable.HashMap
 
 import akka.util.ByteStringBuilder
 
-import rtmp.amf.{AmfObjectWriter, Serializer}
+import rtmp.amf.{CustomSerializable, AmfObjectWriter, Serializer}
 
 /**
  * Serialize objects into AMF0
@@ -14,18 +14,22 @@ class Amf0Serializer(builder:ByteStringBuilder) extends Serializer(builder) {
 
   private def writers = HashMap[Class[_], AmfObjectWriter[_]](
     (classOf[String], new StringWriter()),
-    (classOf[Boolean], new BooleanWriter())
+    (classOf[Boolean], new BooleanWriter()),
+    (classOf[java.lang.Boolean], new BooleanWriter()),
+    (classOf[Double], new DoubleWriter()),
+    (classOf[Integer], new IntegerWriter())
   )
 
-  override protected def getObjectWriter[T](cls: Class[T]): AmfObjectWriter[T] = {
+  override def writeNull(): Unit = builder.putByte(Amf0Types.TYPE_NULL)
+
+  override protected def getObjectWriter[T](cls: Class[T]): Option[AmfObjectWriter[T]] = {
 
     writers.get(cls) match {
-      case Some(writer) => writer.asInstanceOf[AmfObjectWriter[T]]
-      case None => throw new Exception("Unable to get object writer for class: "+cls)
+      case Some(writer) => Some(writer.asInstanceOf[AmfObjectWriter[T]])
+      case None => None
     }
   }
 
-  override def writeNull(): Unit = {
+  override protected def getObjectWriter: AmfObjectWriter[AnyRef] = new ObjectWriter()
 
-  }
 }

@@ -9,7 +9,6 @@ import rtmp.amf.AmfObjectWriter
 trait Amf0StringWriter {
 
   def writeString(builder:ByteStringBuilder, value:String) = {
-
     builder.putShort(value.length)(ByteOrder.BIG_ENDIAN)
     builder.putBytes(value.getBytes)
   }
@@ -20,9 +19,8 @@ trait Amf0StringWriter {
  */
 class StringWriter extends AmfObjectWriter[String] with Amf0StringWriter {
 
-  override def write(builder: ByteStringBuilder, obj: String): Unit = {
-
-
+  override def write(builder: ByteStringBuilder, value: String) = {
+    builder.putByte(Amf0Types.TYPE_STRING)
+    writeString(builder, value)
   }
-
 }
