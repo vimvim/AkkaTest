@@ -1,6 +1,7 @@
 
 import java.io.{FileInputStream, FileNotFoundException, File}
 
+import rtmp.status.NcConnectSuccess
 import scala.collection.immutable.{ListSet, Iterable}
 import scala.concurrent.duration._
 
@@ -13,9 +14,9 @@ import org.scalatest.concurrent._
 import org.scalatest._
 import org.scalatest.matchers.{ClassicMatchers, Matchers, ShouldMatchers}
 
-import rtmp.amf.{AmfNull, AMF0Encoding}
-import rtmp.packet.{Invoke, InvokeDecoder}
-import rtmp.amf.amf0.Amf0Deserializer
+import rtmp.amf.{AmfMixedMap, AmfNull, AMF0Encoding}
+import rtmp.packet.{InvokeResponse, Invoke, InvokeDecoder}
+import rtmp.amf.amf0.{Amf0Serializer, Amf0Deserializer}
 
 /**
  * Test compose of the RTMP packets
@@ -42,6 +43,28 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
     // conn params ( null )
     //
 
+    val binaryData = readData("out_5.rtmp")
+    val packet = new InvokeResponse(new Invoke("connect", 1, null),
+      new NcConnectSuccess(
+        "RED5/1,0,2,0",
+        31,
+        1,
+        new AmfMixedMap(Map[String, AnyRef](
+          "type" -> "red5",
+          "version" -> "4,0,0,1121"
+        ))
+      )
+    )
+
+    val byteBuilder = ByteString.newBuilder
+
+    //TODO: Add packet header ( transport level encoding )
+
+    val serializer = new Amf0Serializer(byteBuilder)
+    packet.serialize(serializer)
+    val serializedPacket = byteBuilder.result()
+
+    assert(binaryData.equals(serializedPacket))
 
     /*
     val binaryData = readData("out_5.rtmp")
@@ -50,9 +73,21 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
 
     // TODO: Note StatusObject is ICustomSerializable
 
+    // Structure of the params in the NcConnectSuccess ( AMF.TYPE_OBJECT )
+    // code
+    // level
+    // description
+    // data ( AMF_MIXED_ARRAY )
+    //    type -> red5
+    //    version -> 4,0,0,1121
+    // capabilities=31
+    // fmsVer=RED5/1,0,2,0
+    // mode=1
+
+
     assert(packet.equals(Invoke("_result", 1, List(
       null,
-      new StatusObject(
+      new NcConnectSuccess(
         "NetConnection.Connect.Success",
         "status",
         "Connection succeeded.",
