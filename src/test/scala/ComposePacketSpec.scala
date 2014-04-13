@@ -1,6 +1,7 @@
 
 import java.io.{FileInputStream, FileNotFoundException, File}
 
+import rtmp.header.FullHeader
 import rtmp.status.NcConnectSuccess
 import scala.collection.immutable.{ListSet, Iterable}
 import scala.concurrent.duration._
@@ -56,13 +57,19 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
       )
     )
 
-    val byteBuilder = ByteString.newBuilder
+    val packetBuilder = ByteString.newBuilder
 
-    //TODO: Add packet header ( transport level encoding )
-
-    val serializer = new Amf0Serializer(byteBuilder)
+    val serializer = new Amf0Serializer(packetBuilder)
     packet.serialize(serializer)
-    val serializedPacket = byteBuilder.result()
+    val serializedPacket = packetBuilder.result()
+
+    // Encode HEADER_NEW
+    // CHUNK, E, Header [channelId=3, dataType=20, timerBase=0, timerDelta=0, size=225, streamId=0, extendedTimestamp=0],
+    val header = new FullHeader(3, 0, 0, serializedPacket.length, 20, 0)
+
+    val chunkBuilder = ByteString.newBuilder
+
+
 
     assert(binaryData.equals(serializedPacket))
 

@@ -3,6 +3,7 @@ package rtmp.amf.amf0
 import akka.util.ByteStringBuilder
 
 import rtmp.amf.{Serializer, AmfObjectWriter, AmfMixedArray}
+import java.nio.ByteOrder
 
 /**
  * Writer for AMF mixed array format
@@ -14,9 +15,9 @@ class MixedArrayWriter(serializer:Serializer) extends AmfObjectWriter[AmfMixedAr
     builder.putByte(Amf0Types.TYPE_MIXED_ARRAY)
 
     val maxKey = array.maxKey
-    builder.putInt(maxKey)
+    builder.putInt(maxKey)(ByteOrder.BIG_ENDIAN)
 
-    array.iterateEntries((key:String, value:AnyRef)=> {
+    array.iterateEntries((key:String, value:Any)=> {
       writeString(builder, key)
       serializer.writeObject(key)
     })

@@ -15,22 +15,29 @@ abstract class AmfMixedArray {
    * Iterate over all array entries
    * @param f     Function which will be called for every entry
    */
-  def iterateEntries(f:(String, AnyRef)=>Unit)
+  def iterateEntries(f:(String, Any)=>Unit)
 }
 
-class AmfMixedList(val array:List[AnyRef] = List[AnyRef]()) extends AmfMixedArray {
+class AmfMixedList(val array:List[Any] = List[Any]()) extends AmfMixedArray {
 
-  override def iterateEntries(f: (String, AnyRef) => Unit): Unit = array.fold(0)((idx:Int, element)=>{
-    f(idx.toString, element)
-    idx+1
-  })
+  override def iterateEntries(f: (String, Any) => Unit): Unit = {
+    array.foldLeft(0)((idx, element)=>{
+      f(idx.toString, element)
+      idx+1
+    })
+  }
 
   override def maxKey: Int = array.length
 }
 
-class AmfMixedMap(val map:Map[String,AnyRef] = Map[String,AnyRef]()) extends AmfMixedArray {
+class AmfMixedMap(val map:Map[String,Any] = Map[String,Any]()) extends AmfMixedArray {
 
-  override def iterateEntries(f: (String, AnyRef) => Unit): Unit = map.foreach(f)
+  override def iterateEntries(f: (String, Any) => Unit): Unit = {
+    map.foreach(keyVal => {
+      f(keyVal._1, keyVal._2)
+    })
+  }
+
   override def maxKey: Int = map.foldLeft(-1)((v:Int, entry)=>{
 
     val key = entry._1
