@@ -68,10 +68,12 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
     val header = new FullHeader(3, 0, 0, serializedPacket.length, 20, 0)
 
     val chunkBuilder = ByteString.newBuilder
+    header.serialize(chunkBuilder)
+    chunkBuilder.append(serializedPacket)
 
+    val chunk = chunkBuilder.result()
 
-
-    assert(binaryData.equals(serializedPacket))
+    assert(binaryData.equals(chunk))
 
     /*
     val binaryData = readData("out_5.rtmp")

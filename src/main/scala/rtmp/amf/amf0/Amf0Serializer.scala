@@ -15,6 +15,7 @@ class Amf0Serializer(builder:ByteStringBuilder) extends Serializer(builder) {
 
   private def writers = HashMap[Class[_], AmfObjectWriter[_]](
     (classOf[String], new StringWriter()),
+    (classOf[Null], new NullWriter()),
     (classOf[java.lang.String], new StringWriter()),
     (classOf[Boolean], new BooleanWriter()),
     (classOf[java.lang.Boolean], new BooleanWriter()),
@@ -22,11 +23,12 @@ class Amf0Serializer(builder:ByteStringBuilder) extends Serializer(builder) {
     (classOf[Integer], new IntegerWriter()),
     (classOf[Int], new IntegerWriter()),
     (classOf[Map[String,Any]], new ObjectWriter(this)),
+    (classOf[AmfMixedArray], new MixedArrayWriter(this)),
     (classOf[AmfMixedList], new MixedArrayWriter(this)),
     (classOf[AmfMixedMap], new MixedArrayWriter(this))
   )
 
-  override def writeNull(): Unit = builder.putByte(Amf0Types.TYPE_NULL)
+  // override def writeNull(): Unit = builder.putByte(Amf0Types.TYPE_NULL)
 
   override def writeEndObject(): Unit = builder.putByte(Amf0Types.TYPE_END_OF_OBJECT)
 

@@ -9,28 +9,36 @@ import akka.util.ByteStringBuilder
  */
 abstract class Serializer(builder:ByteStringBuilder) {
 
-  def writeNull()
+  // def writeNull()
 
   def writeEndObject()
 
   def writeObject[T: ClassTag](obj:T) = {
 
-    val cs = implicitly[ClassTag[T]]
-    // val objClass = cs.runtimeClass
+    obj match {
 
-    val objClass = selectPreciseType(cs, obj)
+      case customSerializable: CustomSerializable => getCustomWriter.write(builder, customSerializable)
 
-    // getObjectWriter(obj.getClass.asInstanceOf[Class[T]]) match {
+      case null =>
+        writeObjectInternal(classOf[Null])( (writer) =>{
+          writer.write(builder, obj.asInstanceOf[Null])
+        })
+
+      case _ =>
+        val cs = implicitly[ClassTag[T]]
+        val objClass = selectPreciseType(cs, obj)
+
+        writeObjectInternal(objClass)((writer) =>{
+          writer.write(builder, obj)
+        })
+    }
+  }
+
+  protected def writeObjectInternal[T](objClass:Class[T])(writeFunc: (AmfObjectWriter[T]) =>Unit) = {
+
     getObjectWriter(objClass.asInstanceOf[Class[T]]) match {
-      case Some(writer) => writer.write(builder, obj)
-      case None =>
-
-        obj match {
-          case customSerializable: CustomSerializable => getCustomWriter.write(builder, customSerializable)
-          case _ => throw new Exception("Unable to get object writer for class: "+obj.getClass)
-        }
-
-        // throw new Exception("Unable to get object writer for class: "+obj.getClass)
+      case Some(writer) => writeFunc(writer)
+      case None => throw new Exception("Unable to get object writer for class: "+objClass)
     }
   }
 
@@ -46,5 +54,4 @@ abstract class Serializer(builder:ByteStringBuilder) {
       cs.runtimeClass.asInstanceOf[Class[T]]
     }
   }
-
 }

@@ -22,7 +22,8 @@ class Amf0Spec extends FlatSpec with ClassicMatchers {
     serializer.writeObject(123)
     serializer.writeObject(true)
     serializer.writeObject(false)
-    serializer.writeNull()
+    // serializer.writeNull()
+    serializer.writeObject(null)
 
     val data = builder.result()
     val dataItr = data.iterator
