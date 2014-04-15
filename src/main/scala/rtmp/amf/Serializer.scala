@@ -3,15 +3,22 @@ package rtmp.amf
 import scala.reflect._
 
 import akka.util.ByteStringBuilder
+import rtmp.amf.amf0.Amf0StringWriter
+import java.nio.ByteOrder
 
 /**
  * Serialize object into AMF
  */
-abstract class Serializer(builder:ByteStringBuilder) {
+abstract class Serializer(builder:ByteStringBuilder) extends Amf0StringWriter {
 
   // def writeNull()
 
   def writeEndObject()
+
+  def writeProperty[T: ClassTag](name:String, value:T) = {
+    writeString(builder, name)
+    writeObject(value)
+  }
 
   def writeObject[T: ClassTag](obj:T) = {
 

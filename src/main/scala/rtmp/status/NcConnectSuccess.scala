@@ -1,6 +1,6 @@
 package rtmp.status
 
-import rtmp.amf.{AmfMixedArray, AmfMixedMap, Serializer}
+import rtmp.amf.{AmfMixedArray, Serializer}
 
 /**
  *
@@ -12,16 +12,9 @@ class NcConnectSuccess(val fmsVer:String, val capabilities:Int, val mode:Int, va
 
     super.serialize(serializer)
 
-    serializer.writeObject("data")
-    serializer.writeObject(data)
-
-    serializer.writeObject("capabilities")
-    serializer.writeObject(capabilities)
-
-    serializer.writeObject("fmsVer")
-    serializer.writeObject(fmsVer)
-
-    serializer.writeObject("mode")
-    serializer.writeObject(mode)
+    serializer.writeProperty("data", data)
+    serializer.writeProperty("capabilities", capabilities)
+    serializer.writeProperty("fmsVer", fmsVer)
+    serializer.writeProperty("mode", mode)
   }
 }

@@ -18,13 +18,11 @@ class MixedArrayWriter(serializer:Serializer) extends AmfObjectWriter[AmfMixedAr
     builder.putInt(maxKey)(ByteOrder.BIG_ENDIAN)
 
     array.iterateEntries((key:String, value:Any)=> {
-      writeString(builder, key)
-      serializer.writeObject(key)
+      serializer.writeProperty(key, value)
     })
 
     if (maxKey>=0) {
-      writeString(builder, "length")
-      serializer.writeObject(maxKey+1)
+      serializer.writeProperty("length", maxKey+1)
     }
 
     writeString(builder, "")

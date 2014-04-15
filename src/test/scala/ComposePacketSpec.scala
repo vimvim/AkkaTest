@@ -44,7 +44,6 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
     // conn params ( null )
     //
 
-    val binaryData = readData("out_5.rtmp")
     val packet = new InvokeResponse(new Invoke("connect", 1, null),
       new NcConnectSuccess(
         "RED5/1,0,2,0",
@@ -73,7 +72,10 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
 
     val chunk = chunkBuilder.result()
 
-    assert(binaryData.equals(chunk))
+    info("df")
+
+    compare(chunk, "out_5.rtmp")
+    // assert(binaryData.equals(chunk))
 
     /*
     val binaryData = readData("out_5.rtmp")
