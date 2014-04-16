@@ -4,6 +4,7 @@ import scala.collection.immutable.ListSet
 import akka.util.ByteString
 import rtmp.amf.Serializer
 import rtmp.status.Status
+import scala.reflect.ClassTag
 
 /**
  *
@@ -26,18 +27,18 @@ case class Invoke(action:String, invokeID:Int, params:List[Any]) extends Packet 
   }
 }
 
-case class InvokeResponse(invoke:Invoke, status:Status) extends Packet {
+case class InvokeResponse[T: ClassTag](invoke:Invoke, success:Boolean, result:T) extends Packet {
 
   override def serialize(serializer: Serializer): Unit = {
 
-    if (status.success) serializer.writeObject("_result") else serializer.writeObject("_error")
+    if (success) serializer.writeObject("_result") else serializer.writeObject("_error")
 
     serializer.writeObject(invoke.invokeID)
 
     // TODO: Conn parameters. What is this ??
     serializer.writeObject(null)
 
-    serializer.writeObject(status)
+    serializer.writeObject(result)
   }
 }
 

@@ -18,6 +18,21 @@ object HexBytesUtil {
     }
   }
 
+  /**
+   * Create printable representation of the two arrays which is can be used for
+   * visually finding differences in the data.
+   *
+   * @param bytes
+   * @param sep
+   * @return
+   */
+  def arraysVisualMatch(bytes1: Array[Byte], bytes1Title:String, bytes2: Array[Byte], bytes2Title:String): String = {
+
+
+
+  }
+
+
   /*
   def example {
     val data = "48 65 6C 6C 6F 20 57 6F 72 6C 64 21 21"
