@@ -38,12 +38,6 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
 
   "A composed invoke connect response packet " should "match to the test data out_5.rtmp" in {
 
-    // action ( "_result" , "_error" - in case of error )
-    // transaction id ()
-
-    // conn params ( null )
-    //
-
     val packet = new InvokeResponse(new Invoke("connect", 1, null),
       new NcConnectSuccess(
         "RED5/1,0,2,0",
@@ -72,51 +66,7 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
 
     val chunk = chunkBuilder.result()
 
-    info("df")
-
     compare(chunk, "out_5.rtmp")
-    // assert(binaryData.equals(chunk))
-
-    /*
-    val binaryData = readData("out_5.rtmp")
-    val encoder = new InvokeEncoder(new DummyLogger())
-    val packet = encoder.encode(new AMF0Encoding(), binaryData)
-
-    // TODO: Note StatusObject is ICustomSerializable
-
-    // Structure of the params in the NcConnectSuccess ( AMF.TYPE_OBJECT )
-    // code
-    // level
-    // description
-    // data ( AMF_MIXED_ARRAY )
-    //    type -> red5
-    //    version -> 4,0,0,1121
-    // capabilities=31
-    // fmsVer=RED5/1,0,2,0
-    // mode=1
-
-
-    assert(packet.equals(Invoke("_result", 1, List(
-      null,
-      new NcConnectSuccess(
-        "NetConnection.Connect.Success",
-        "status",
-        "Connection succeeded.",
-        null,
-        Map(
-        "app" -> "live",
-        "type" -> "nonprivate",
-        "flashVer" -> "FMLE/3.0 (compatible; Lavf55.2.0)",
-        "tcUrl" -> "rtmp://127.0.0.1:1935/live"
-      )),
-      Map(
-      "app" -> "live",
-      "type" -> "nonprivate",
-      "flashVer" -> "FMLE/3.0 (compatible; Lavf55.2.0)",
-      "tcUrl" -> "rtmp://127.0.0.1:1935/live"
-      )
-    ))))
-    */
   }
 
 }

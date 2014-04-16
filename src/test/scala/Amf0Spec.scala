@@ -45,9 +45,9 @@ class Amf0Spec extends FlatSpec with ClassicMatchers {
     class TestObject(val1:String, val2:Integer, val3:Boolean) extends CustomSerializable {
 
       override def serialize(serializer: Serializer) = {
-        serializer.writeObject(val1)
-        serializer.writeObject(val2)
-        serializer.writeObject(val3)
+        serializer.writeProperty("val1", val1)
+        serializer.writeProperty("val2", val2)
+        serializer.writeProperty("val3", val3)
       }
     }
 
@@ -63,11 +63,16 @@ class Amf0Spec extends FlatSpec with ClassicMatchers {
     val deserializer = new Amf0Deserializer(dataItr)
     val values = deserializer.readAll
 
-    assert(values.equals(List(
-      "Test string",
-      123,
-      true
-    )))
+    assert(values.equals(
+      List(
+        Map(
+          "val1" -> "Test string",
+          "val2" -> 123,
+          "val3" -> true
+          )
+        )
+      )
+    )
   }
 
   "A serialized AMF object ( Map )" should "be correctly deserialized" in {

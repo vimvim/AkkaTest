@@ -114,7 +114,7 @@ case class FullHeader(streamID:Int, timestamp:Int, extendedTime:Int, length:Int,
    */
   override def serialize(builder: ByteStringBuilder): Unit = {
 
-    encodeFirstBytes(builder, 0x02, streamID)
+    encodeFirstBytes(builder, 0x00, streamID)
     encodeTime(builder, timestamp)
     encodeSize(builder, length)
     encodeType(builder, typeID)
