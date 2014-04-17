@@ -1,6 +1,8 @@
 
 package utils
 
+import akka.util.ByteString
+
 /**
  * This utility implements some helper methods for work with the hex strings.
  *
@@ -28,6 +30,39 @@ object HexBytesUtil {
    */
   def arraysVisualMatch(bytes1: Array[Byte], bytes1Title:String, bytes2: Array[Byte], bytes2Title:String): String = {
 
+    def doubleFold(list:List[(String,String)], bytes1: Array[Byte], bytes2: Array[Byte]):List[(String,String)] = {
+
+      if (bytes1.isEmpty && bytes2.nonEmpty) {
+        list.reverse
+      }
+
+      def getNumber(bytes:Array[Byte]):String = {
+        if (bytes.isEmpty) {
+          "  "
+        } else {
+          "%02x".format(bytes.head)
+        }
+      }
+
+      def moveHead(bytes:Array[Byte]) = {
+        if (bytes.isEmpty) {
+          bytes
+        } else {
+          bytes.tail
+        }
+      }
+
+      val pair = (getNumber(bytes1), getNumber(bytes2))
+      doubleFold(pair::list, moveHead(bytes1), moveHead(bytes2))
+    }
+
+    val pairsList = doubleFold(List[(String,String)](), bytes1, bytes2)
+
+    case class FormatterState(data:String="", pos:Int=0, lastMatch:Int=0, linePos:Int=0)
+
+    pairsList.foldLeft(FormatterState)((pair:(String,String))=>{
+
+    })
 
 
   }
