@@ -28,7 +28,16 @@ object HexBytesUtil {
    */
   def arraysVisualMatch(bytes1: Array[Byte], bytes1Title:String, bytes2: Array[Byte], bytes2Title:String): String = {
 
-    def doubleFold(list:List[(String,String)], bytes1: Array[Byte], bytes2: Array[Byte]):List[(String,String)] = {
+    /**
+     * Class used for storing of the pairs from both arrays.
+     * @param byte1   Byte from bytes1
+     * @param byte2   Byte from bytes2
+     * @param char1   Byte represented as char from bytes1
+     * @param char2   Byte represented as char from bytes2
+     */
+    case class Pair(byte1:String, byte2:String, char1:String, char2:String)
+
+    def doubleFold(list:List[Pair], bytes1: Array[Byte], bytes2: Array[Byte]):List[Pair] = {
 
       if (bytes1.isEmpty && bytes2.isEmpty) {
 
@@ -43,6 +52,14 @@ object HexBytesUtil {
           }
         }
 
+        def getChar(bytes:Array[Byte]):String = {
+          if (bytes.isEmpty || (bytes.head<=32)) {
+            "  "
+          } else {
+            bytes.head.toChar.toString
+          }
+        }
+
         def moveHead(bytes:Array[Byte]) = {
           if (bytes.isEmpty) {
             bytes
@@ -51,18 +68,21 @@ object HexBytesUtil {
           }
         }
 
-        val pair = (getNumber(bytes1), getNumber(bytes2))
+        val pair = Pair(getNumber(bytes1), getNumber(bytes2), getChar(bytes1), getChar(bytes2))
         doubleFold(pair::list, moveHead(bytes1), moveHead(bytes2))
       }
     }
 
-    val pairsList = doubleFold(List[(String,String)](), bytes1, bytes2)
+    val pairsList = doubleFold(List[Pair](), bytes1, bytes2)
 
     case class TextState(
-      text:String="",
-      line1:String=bytes1Title+" [0]: ",
-      line2:String=bytes2Title+" [0]: ",
-      line3:String="", pos:Int=0
+      text:String = "",
+      line1:String = bytes1Title+" [0000]:",
+      line2:String = bytes2Title+" [0000]:",
+      line3:String = "",
+      pos:Int=0,
+      line1Chars:String = "",
+      line2Chars:String = ""
     )
 
     case class FormatterState(
@@ -72,55 +92,40 @@ object HexBytesUtil {
       lastMatch:Boolean=true
     )
 
-    val state = pairsList.foldLeft(FormatterState())((state, pair:(String,String))=>{
+    val state = pairsList.foldLeft(FormatterState())((state, pair)=>{
 
       def makeText(text:TextState) = {
 
         def makeDiffNotes(diffText:String) = {
 
-          if (pair._1.equals(pair._2) && !state.lastMatch) {
+          if (pair.byte1.equals(pair.byte2) && !state.lastMatch) {
             diffText+" ["+state.lastMatchPos+"-"+state.pos+"]"
           } else {
             diffText
           }
-
-          /*
-          if (!pair._1.equals(pair._2)) {
-
-            if (state.lastMatch) {
-              diffText+" ["+state.pos+"-"
-            } else {
-              diffText
-            }
-
-          } else {
-
-            if (!state.lastMatch) {
-              diffText+"-"+state.pos+"]"
-            } else {
-              diffText
-            }
-          }
-          */
         }
 
         if (text.pos>=20) {
 
           TextState(
-            text.text+"\r\n"+text.line1+"\r\n"+text.line2+"\r\n"+text.line3,
-            bytes1Title+" ["+state.pos+"]: "+pair._1+" ",
-            bytes2Title+" ["+state.pos+"]: "+pair._2+" ",
-            makeDiffNotes("Diff: "),
-            0
+            text.text+"\r\n"+text.line1+"\t"+text.line1Chars+"\r\n"+text.line2+"\t"+text.line2Chars+(if (text.line3.isEmpty) "" else "\r\nDiff:"+text.line3),
+            bytes1Title+" ["+"%04d".format(state.pos)+"]: "+pair.byte1,
+            bytes2Title+" ["+"%04d".format(state.pos)+"]: "+pair.byte2,
+            makeDiffNotes(""),
+            0,
+            pair.char1,
+            pair.char2
           )
         } else {
 
           TextState(
             text.text,
-            text.line1+" "+pair._1,
-            text.line2+" "+pair._2,
+            text.line1+" "+pair.byte1,
+            text.line2+" "+pair.byte2,
             makeDiffNotes(text.line3),
-            text.pos+1
+            text.pos+1,
+            text.line1Chars+pair.char1,
+            text.line2Chars+pair.char2
           )
         }
       }
@@ -128,8 +133,8 @@ object HexBytesUtil {
       FormatterState(
         makeText(state.text),
         state.pos+1,
-        if (pair._1.equals(pair._2)) state.pos else state.lastMatchPos,
-        pair._1.equals(pair._2)
+        if (pair.byte1.equals(pair.byte2)) state.pos else state.lastMatchPos,
+        pair.byte1.equals(pair.byte2)
       )
     })
 
