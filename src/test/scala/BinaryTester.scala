@@ -34,8 +34,13 @@ trait BinaryTester extends FlatSpec {
     if (!binaryData.equals(data)) {
       // TODO: Print both dumps and raise exception
       // log.debug("Public key bytes:{} ", HexBytesUtil.bytes2hex(publicKey))
+
+      info(HexBytesUtil.arraysVisualMatch(binaryData.toArray,"Dump    ", data.toArray, "Produced"))
+
+      /*
       info("Original dump:"+HexBytesUtil.bytes2hex(binaryData.toArray))
       info("Produced dump:"+HexBytesUtil.bytes2hex(data.toArray))
+      */
     }
   }
 
