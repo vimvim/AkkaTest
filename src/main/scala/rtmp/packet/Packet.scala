@@ -24,6 +24,15 @@ case class Invoke(action:String, invokeID:Int, params:List[Any]) extends Packet 
 
   override def serialize(serializer: Serializer): Unit = {
 
+    serializer.writeObject(action)
+    serializer.writeObject(invokeID)
+
+    // TODO: Write conn params
+    serializer.writeObject(null)
+
+    params.foreach((param)=>{
+      serializer.writeObject(param)
+    })
   }
 }
 

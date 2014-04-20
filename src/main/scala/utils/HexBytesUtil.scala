@@ -54,7 +54,7 @@ object HexBytesUtil {
 
         def getChar(bytes:Array[Byte]):String = {
           if (bytes.isEmpty || (bytes.head<=32)) {
-            "  "
+            "."
           } else {
             bytes.head.toChar.toString
           }

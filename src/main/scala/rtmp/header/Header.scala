@@ -92,7 +92,7 @@ case class ShortHeader(streamID:Int, timeDelta:Int, extendedTimeDelta:Int, lengt
    */
   override def serialize(builder: ByteStringBuilder): Unit = {
 
-    encodeFirstBytes(builder, 0x02, streamID)
+    encodeFirstBytes(builder, 0x01, streamID)
     encodeTime(builder, timeDelta)
     encodeSize(builder, length)
     encodeType(builder, typeID)

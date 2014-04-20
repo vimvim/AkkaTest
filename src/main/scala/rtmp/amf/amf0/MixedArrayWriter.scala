@@ -15,7 +15,7 @@ class MixedArrayWriter(serializer:Serializer) extends AmfObjectWriter[AmfMixedAr
     builder.putByte(Amf0Types.TYPE_MIXED_ARRAY)
 
     val maxKey = array.maxKey
-    builder.putInt(maxKey)(ByteOrder.BIG_ENDIAN)
+    builder.putInt(maxKey+1)(ByteOrder.BIG_ENDIAN)
 
     array.iterateEntries((key:String, value:Any)=> {
       serializer.writeProperty(key, value)
