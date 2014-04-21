@@ -53,6 +53,12 @@ sealed trait Header {
   }
 }
 
+/**
+ * This header is used when single message is slitted to the several packets.
+ * Next packets which is contain another parts of this message will be have this type of the header.
+ *
+ * @param streamID
+ */
 case class BasicHeader(streamID:Int) extends Header {
 
   /**
