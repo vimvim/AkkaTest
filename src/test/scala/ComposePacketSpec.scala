@@ -1,18 +1,11 @@
 
 import java.io.{FileInputStream, FileNotFoundException, File}
 
-import rtmp.header.BasicHeader
-import rtmp.header.FullHeader
-import rtmp.header.ShortHeader
-import rtmp.header.{BasicHeader, ShortHeader, Header, FullHeader}
-import rtmp.{OutgoingMessage, Message, OutPacketStream}
-import rtmp.packet.Invoke
-import rtmp.packet.InvokeResponse
-import rtmp.status.{StreamPublishStart, NcConnectSuccess}
 import scala.collection.immutable.{ListSet, Iterable}
 import scala.concurrent.duration._
 
 import akka.util.{ByteString, CompactByteString}
+
 import akka.actor.{ Actor, Props, ActorSystem }
 import akka.testkit.{ ImplicitSender, TestKit, TestActorRef }
 
@@ -24,6 +17,9 @@ import org.scalatest.matchers.{ClassicMatchers, Matchers, ShouldMatchers}
 import rtmp.amf.{AmfMixedMap, AmfNull, AMF0Encoding}
 import rtmp.packet._
 import rtmp.amf.amf0.{Amf0Serializer, Amf0Deserializer}
+import rtmp.header.Header
+import rtmp.{OutgoingMessage, Message, OutPacketStream}
+import rtmp.status.{StreamPublishStart, NcConnectSuccess}
 
 /**
  * Test compose of the RTMP packets
@@ -32,17 +28,18 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
 
   val outStream2 = new OutPacketStream(2)
   val outStream3 = new OutPacketStream(3)
+  val outStream4 = new OutPacketStream(4)
 
   "A composed ServerBW packet " should "match to the test data out_2.rtmp" in {
-    compare(serializeOut(outStream2.stream(Message(2, 0, 0, 0, new ServerBW(10000000)))), "out_2.rtmp")
+    compare(serializeOut(outStream2.stream(Message(2, 0, 0, 0, ServerBW(10000000)))), "out_2.rtmp")
   }
 
   "A composed ClientBW packet " should "match to the test data out_3.rtmp" in {
-    compare(serializeOut(outStream2.stream(Message(2, 0, 0, 0, new ClientBW(10000000, 2)))), "out_3.rtmp")
+    compare(serializeOut(outStream2.stream(Message(2, 0, 0, 0, ClientBW(10000000, 2)))), "out_3.rtmp")
   }
 
   "A composed PING_CLIENT control packet " should "match to the test data out_4.rtmp" in {
-    compare(serializeOut(outStream2.stream(Message(2, 0, 0, 0, new ClientPing(10000000)))), "out_4.rtmp")
+    compare(serializeOut(outStream2.stream(Message(2, 0, 0, 0, StreamBegin()))), "out_4.rtmp")
   }
 
   "A composed 'connect' invoke response packet " should "match to the test data out_5.rtmp" in {
@@ -140,7 +137,7 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
 
   "A composed 'onStatus' invoke packet " should "match to the test data out_9.rtmp" in {
 
-    compare(serializeOut(outStream3.stream(Message(3, 0, 0, 0,
+    compare(serializeOut(outStream4.stream(Message(4, 0, 0, 1,
       new Invoke(
         "onStatus",
         0,

@@ -46,10 +46,11 @@ sealed trait Header {
   }
 
   def encodeMessageSID(builder:ByteStringBuilder, messagesSID:Int) = {
-    builder.putByte( ((messagesSID>>24) & 0xff).toByte )
-    builder.putByte( ((messagesSID>>16) & 0xff).toByte )
-    builder.putByte( ((messagesSID>>8) & 0xff).toByte )
+    // NOTE: message SID encoded in the LITTLE ENDIAN
     builder.putByte( (messagesSID & 0xff ).toByte )
+    builder.putByte( ((messagesSID>>8) & 0xff).toByte )
+    builder.putByte( ((messagesSID>>16) & 0xff).toByte )
+    builder.putByte( ((messagesSID>>24) & 0xff).toByte )
   }
 }
 

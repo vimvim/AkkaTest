@@ -21,8 +21,8 @@ case class Notify(action:String, params:List[Any]) extends Packet {
 
   def typeID = PacketTypes.TYPE_NOTIFY
 
-  override def serialize(serializer: Serializer): Unit = {
-
+  override def serialize(serializer: Serializer):Serializer = {
+    serializer
   }
 }
 
@@ -100,7 +100,7 @@ case class ClientBW(bandwidth:Int, limitType:Byte) extends Packet {
   val LIMIT_SOFT:Byte = 1
   val LIMIT_DYNAMIC:Byte = 2
 
-  def typeID = PacketTypes.TYPE_SERVER_BANDWIDTH
+  def typeID = PacketTypes.TYPE_CLIENT_BANDWIDTH
 
   override def serialize(serializer: Serializer):Serializer = {
     serializer.writeInt(bandwidth)
@@ -108,14 +108,27 @@ case class ClientBW(bandwidth:Int, limitType:Byte) extends Packet {
   }
 }
 
-case class Control(ctrlType:Short) extends Packet {
+trait Control {
 
+  def ctrlType:Short
   def typeID = PacketTypes.TYPE_PING
 
-  override def serialize(serializer: Serializer):Serializer = serializer.writeShort(ctrlType)
+  def serialize(serializer: Serializer):Serializer = serializer.writeShort(ctrlType)
 }
 
-case class ClientPing(time:Int) extends Control(ControlTypes.PING_CLIENT) {
+case class StreamBegin() extends Packet with Control {
+
+  def ctrlType:Short = ControlTypes.STREAM_BEGIN
+
+  override def serialize(serializer: Serializer):Serializer = {
+    super.serialize(serializer)
+    serializer.writeInt(0)
+  }
+}
+
+case class ClientPing(time:Int) extends Packet with Control {
+
+  def ctrlType:Short = ControlTypes.PING_CLIENT
 
   override def serialize(serializer: Serializer):Serializer = {
     super.serialize(serializer)

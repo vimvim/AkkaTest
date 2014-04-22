@@ -63,6 +63,8 @@ class OutPacketStream(val streamID:Int, val chunkSize:Int = 128) {
 
       case None =>
 
+        lastPacketInfo = Some(PacketInfo(message.timestamp, message.extendedTime, message.messageSID, serializedPacket.length, message.packet.typeID))
+
         encodePacket(List[OutgoingMessage](), serializedPacket, message.packet.typeID,
           (dataLength)=>FullHeader(streamID, message.timestamp, message.extendedTime, dataLength, message.packet.typeID, message.messageSID)
         )
@@ -73,18 +75,18 @@ class OutPacketStream(val streamID:Int, val chunkSize:Int = 128) {
 
     if (data.isEmpty) {
       lastPacketTime = System.currentTimeMillis / 1000
-      out
+      out.reverse
     } else {
 
       val size = if (data.length>chunkSize) chunkSize else data.length
-      val header = headerFactory(size)
+      val header = headerFactory(data.length)
 
       encodePacket(
         OutgoingMessage(
           typeID,
           header.serialize(ByteString.newBuilder).append(data.take(size)).result()
         ) :: out,
-        data.drop(size), typeID, (length)=>BasicHeader(length))
+        data.drop(size), typeID, (length)=>BasicHeader(streamID))
     }
   }
 }
