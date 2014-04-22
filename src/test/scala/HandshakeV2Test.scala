@@ -15,9 +15,9 @@ import akka.event.Logging
 import rtmp.tests.{ConnTester, TestDataSource}
 
 /**
- *
+ * Test encrypted RTMP handshake
  */
-class RtmpStreamTest(_system: ActorSystem)
+class HandshakeV2Test(_system: ActorSystem)
   extends TestKit(_system)
   with ImplicitSender
   with ShouldMatchers
@@ -34,7 +34,10 @@ class RtmpStreamTest(_system: ActorSystem)
     system.awaitTermination(10.seconds)
   }
 
-  "An actors" should "be able to correctly process test stream" in {
+  "An ConnHandler" should "be able to correctly process test stream" in {
+
+    // TODO: Read in_1.rtmp packet and send to the ConnHandler actor
+    // TODO: Get response and match to the out_1.rtmp
 
     // TODO: Needs to test only RTMP handshake in/out packets here.
     // val testData = new TestDataSource("dump")

@@ -22,9 +22,9 @@ import rtmp.{OutgoingMessage, Message, OutPacketStream}
 import rtmp.status.{StreamPublishStart, NcConnectSuccess}
 
 /**
- * Test compose of the RTMP packets
+ * Test serialization of the packets sent by server during client publish media flow.
  */
-class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester {
+class PublishSerializationTest extends FlatSpec with ClassicMatchers with BinaryTester {
 
   val outStream2 = new OutPacketStream(2)
   val outStream3 = new OutPacketStream(3)
@@ -38,7 +38,7 @@ class ComposePacketSpec extends FlatSpec with ClassicMatchers with BinaryTester 
     compare(serializeOut(outStream2.stream(Message(2, 0, 0, 0, ClientBW(10000000, 2)))), "out_3.rtmp")
   }
 
-  "A composed PING_CLIENT control packet " should "match to the test data out_4.rtmp" in {
+  "A composed STREAM_BEGIN control packet " should "match to the test data out_4.rtmp" in {
     compare(serializeOut(outStream2.stream(Message(2, 0, 0, 0, StreamBegin()))), "out_4.rtmp")
   }
 
