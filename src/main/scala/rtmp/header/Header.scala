@@ -7,7 +7,7 @@ sealed trait Header {
 
   def streamID:Int
 
-  def serialize(builder:ByteStringBuilder)
+  def serialize(builder:ByteStringBuilder):ByteStringBuilder
 
   def encodeFirstBytes(builder:ByteStringBuilder, headerType:Byte, sid:Int) = {
 
@@ -67,8 +67,9 @@ case class BasicHeader(streamID:Int) extends Header {
    *
    * @param builder
    */
-  override def serialize(builder: ByteStringBuilder): Unit = {
+  override def serialize(builder: ByteStringBuilder): ByteStringBuilder = {
     encodeFirstBytes(builder, 0x03, streamID)
+    builder
   }
 }
 
@@ -80,11 +81,13 @@ case class ExtendedBasicHeader(streamID:Int, timeDelta:Int, extendedTimeDelta:In
    *
    * @param builder
    */
-  override def serialize(builder: ByteStringBuilder): Unit = {
+  override def serialize(builder: ByteStringBuilder): ByteStringBuilder = {
     encodeFirstBytes(builder, 0x02, streamID)
 
     //TODO: Check when we needs to encode extendedTimeDelta
     encodeTime(builder, timeDelta)
+
+    builder
   }
 }
 
@@ -96,7 +99,7 @@ case class ShortHeader(streamID:Int, timeDelta:Int, extendedTimeDelta:Int, lengt
    *
    * @param builder
    */
-  override def serialize(builder: ByteStringBuilder): Unit = {
+  override def serialize(builder: ByteStringBuilder): ByteStringBuilder = {
 
     encodeFirstBytes(builder, 0x01, streamID)
     encodeTime(builder, timeDelta)
@@ -105,6 +108,7 @@ case class ShortHeader(streamID:Int, timeDelta:Int, extendedTimeDelta:Int, lengt
 
     // TODO: Check when we will needs to encode extendedTimeDelta
 
+    builder
   }
 }
 
@@ -118,7 +122,7 @@ case class FullHeader(streamID:Int, timestamp:Int, extendedTime:Int, length:Int,
    *
    * @param builder
    */
-  override def serialize(builder: ByteStringBuilder): Unit = {
+  override def serialize(builder: ByteStringBuilder): ByteStringBuilder = {
 
     encodeFirstBytes(builder, 0x00, streamID)
     encodeTime(builder, timestamp)
@@ -128,5 +132,6 @@ case class FullHeader(streamID:Int, timestamp:Int, extendedTime:Int, length:Int,
 
     // TODO: Check when we will needs to encode extendedTimeDelta
 
+    builder
   }
 }

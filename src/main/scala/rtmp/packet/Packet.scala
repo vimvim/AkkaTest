@@ -1,19 +1,25 @@
 package rtmp.packet
 
+import scala.reflect.ClassTag
 import scala.collection.immutable.ListSet
+
 import akka.util.ByteString
+
 import rtmp.amf.Serializer
 import rtmp.status.Status
-import scala.reflect.ClassTag
+
 
 /**
  *
  */
 sealed trait Packet {
-  def serialize(serializer:Serializer)
+  def typeID:Byte
+  def serialize(serializer:Serializer):Serializer
 }
 
 case class Notify(action:String, params:List[Any]) extends Packet {
+
+  def typeID = PacketTypes.TYPE_NOTIFY
 
   override def serialize(serializer: Serializer): Unit = {
 
@@ -22,7 +28,9 @@ case class Notify(action:String, params:List[Any]) extends Packet {
 
 case class Invoke(action:String, invokeID:Int, params:List[Any]) extends Packet {
 
-  override def serialize(serializer: Serializer): Unit = {
+  def typeID = PacketTypes.TYPE_INVOKE
+
+  override def serialize(serializer: Serializer):Serializer = {
 
     serializer.writeObject(action)
     serializer.writeObject(invokeID)
@@ -33,12 +41,16 @@ case class Invoke(action:String, invokeID:Int, params:List[Any]) extends Packet 
     params.foreach((param)=>{
       serializer.writeObject(param)
     })
+
+    serializer
   }
 }
 
 case class InvokeResponse[T: ClassTag](invoke:Invoke, success:Boolean, result:T) extends Packet {
 
-  override def serialize(serializer: Serializer): Unit = {
+  def typeID = PacketTypes.TYPE_INVOKE
+
+  override def serialize(serializer: Serializer):Serializer = {
 
     if (success) serializer.writeObject("_result") else serializer.writeObject("_error")
 
@@ -48,19 +60,65 @@ case class InvokeResponse[T: ClassTag](invoke:Invoke, success:Boolean, result:T)
     serializer.writeObject(null)
 
     serializer.writeObject(result)
+
+    serializer
   }
 }
 
 case class Video(data:ByteString) extends Packet {
 
-  override def serialize(serializer: Serializer): Unit = {
+  def typeID = PacketTypes.TYPE_VIDEO_DATA
 
+  override def serialize(serializer: Serializer):Serializer = {
+
+    serializer
   }
 }
 
 case class Audio(data:ByteString) extends Packet {
 
-  override def serialize(serializer: Serializer): Unit = {
+  def typeID = PacketTypes.TYPE_AUDIO_DATA
 
+  override def serialize(serializer: Serializer):Serializer = {
+
+    serializer
+  }
+}
+
+case class ServerBW(bandwidth:Int) extends Packet {
+
+  def typeID = PacketTypes.TYPE_SERVER_BANDWIDTH
+
+  override def serialize(serializer: Serializer):Serializer = {
+    serializer.writeInt(bandwidth)
+  }
+}
+
+case class ClientBW(bandwidth:Int, limitType:Byte) extends Packet {
+
+  val LIMIT_HARD:Byte = 0
+  val LIMIT_SOFT:Byte = 1
+  val LIMIT_DYNAMIC:Byte = 2
+
+  def typeID = PacketTypes.TYPE_SERVER_BANDWIDTH
+
+  override def serialize(serializer: Serializer):Serializer = {
+    serializer.writeInt(bandwidth)
+    serializer.writeByte(limitType)
+  }
+}
+
+case class Control(ctrlType:Short) extends Packet {
+
+  def typeID = PacketTypes.TYPE_PING
+
+  override def serialize(serializer: Serializer):Serializer = serializer.writeShort(ctrlType)
+}
+
+case class ClientPing(time:Int) extends Control(ControlTypes.PING_CLIENT) {
+
+  override def serialize(serializer: Serializer):Serializer = {
+    super.serialize(serializer)
+    serializer.writeInt(time)
   }
 }

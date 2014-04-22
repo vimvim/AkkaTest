@@ -37,11 +37,6 @@ trait BinaryTester extends FlatSpec {
 
       info("DUMP IS NOT MATCHED: ")
       info(HexBytesUtil.arraysVisualMatch(binaryData.toArray,"Dump    ", data.toArray, "Produced"))
-
-      /*
-      info("Original dump:"+HexBytesUtil.bytes2hex(binaryData.toArray))
-      info("Produced dump:"+HexBytesUtil.bytes2hex(data.toArray))
-      */
     }
   }
 

@@ -2,7 +2,7 @@ package rtmp.amf
 
 import scala.reflect._
 
-import akka.util.ByteStringBuilder
+import akka.util.{ByteString, ByteStringBuilder}
 import rtmp.amf.amf0.Amf0StringWriter
 import java.nio.ByteOrder
 
@@ -40,6 +40,23 @@ abstract class Serializer(builder:ByteStringBuilder) extends Amf0StringWriter {
         })
     }
   }
+
+  def writeInt(value:Int):Serializer = {
+    builder.putInt(value)(ByteOrder.BIG_ENDIAN)
+    this
+  }
+
+  def writeShort(value:Short):Serializer = {
+    builder.putShort(value)(ByteOrder.BIG_ENDIAN)
+    this
+  }
+
+  def writeByte(value:Byte):Serializer = {
+    builder.putByte(value)
+    this
+  }
+
+  def result():ByteString = builder.result()
 
   protected def writeObjectInternal[T](objClass:Class[T])(writeFunc: (AmfObjectWriter[T]) =>Unit) = {
 
