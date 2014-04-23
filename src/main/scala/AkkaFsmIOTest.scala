@@ -32,7 +32,7 @@ sealed trait Data
 case object Uninitialized extends Data
 case class SessionData(login:String) extends Data
 
-class ConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor with FSM[State, Data] with ActorLogging {
+class FsmConnHandler(connection: ActorRef, remote: InetSocketAddress) extends Actor with FSM[State, Data] with ActorLogging {
 
   import Tcp._
 
@@ -100,7 +100,7 @@ class Server extends Actor with ActorLogging {
 
       log.info("Connected:"+remote)
 
-      val handler = context.actorOf(Props(classOf[ConnHandler], sender, remote))
+      val handler = context.actorOf(Props(classOf[FsmConnHandler], sender, remote))
       val connection = sender
       connection ! Register(handler)
   }
@@ -148,7 +148,7 @@ class TcpStreamTester(testSource:TestStreamSource, implicit val system:ActorSyst
 
   val connProbe = TestProbe()
 
-  val connActor:TestActorRef[ConnHandler] = TestFSMRef(new ConnHandler(connProbe.ref, new InetSocketAddress(0)))
+  val connActor:TestActorRef[FsmConnHandler] = TestFSMRef(new FsmConnHandler(connProbe.ref, new InetSocketAddress(0)))
 
   def testActor() {
 

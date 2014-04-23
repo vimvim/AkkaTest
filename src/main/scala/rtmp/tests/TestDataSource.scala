@@ -11,6 +11,7 @@ import rtmp.HandshakeDataProvider
 
 /**
  * Test stream provider
+ * TODO: Obsolote, replaced by HandshakeV4Test - remove
  */
 class TestDataSource(path:String) extends HandshakeDataProvider {
 
