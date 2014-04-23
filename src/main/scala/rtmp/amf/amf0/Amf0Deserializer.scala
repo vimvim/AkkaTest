@@ -21,7 +21,8 @@ class Amf0Deserializer(bufferItr:ByteIterator) extends Deserializer(bufferItr) {
     (Amf0Types.TYPE_STRING, new StringReader()),
     (Amf0Types.TYPE_BOOLEAN, new BooleanReader()),
     (Amf0Types.TYPE_OBJECT, new ObjectReader(this, objectRefs)),
-    (Amf0Types.TYPE_END_OF_OBJECT, new EndObjectReader())
+    (Amf0Types.TYPE_END_OF_OBJECT, new EndObjectReader()),
+    (Amf0Types.TYPE_MIXED_ARRAY, new MixedArrayReader())
   )
 
   override protected def getObjectReader(typeId: Byte): AmfObjectReader = {

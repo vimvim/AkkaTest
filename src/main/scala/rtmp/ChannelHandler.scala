@@ -77,7 +77,7 @@ class ChannelHandler(val streamID:Int, val messageHandler:ActorRef) extends Acto
         case Some(decoder) =>
 
           val packet = decoder.decode(new AMF0Encoding(), packetData)
-          log.debug("Packet decoded: ")
+          log.debug("Packet decoded: "+packet)
 
           messageHandler ! new Message(streamID, timestamp, extendedTime, messageSID, packet)
 

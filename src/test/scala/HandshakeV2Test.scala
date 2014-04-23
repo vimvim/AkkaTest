@@ -73,16 +73,21 @@ class HandshakeV2Test(_system: ActorSystem)
       ))
     ))
 
-    testInputPackets("in_3.rtmp", List[Packet](
-      Invoke("releaseStream", 2, List(AmfNull(), "mystream.sdp"))
-    ))
+    testInputPackets("in_3.rtmp", List[Packet]())
     testInputPackets("in_4.rtmp", List[Packet](
-      Invoke("FCPublish", 3, List(AmfNull(), "mystream.sdp"))
-    ))
-    testInputPackets("in_5.rtmp", List[Packet](
+      Invoke("releaseStream", 2, List(AmfNull(), "mystream.sdp")),
+      Invoke("FCPublish", 3, List(AmfNull(), "mystream.sdp")),
       Invoke("createStream", 4, List(AmfNull()))
     ))
-    testInputPackets("in_6.rtmp", List[Packet]())
+
+    // Invoke publish ( mystream.sdp, live ) here !!
+    // Invoke(publish, 5, List(AmfNull(), 'mystream.sdp', 'live'))
+    testInputPackets("in_5.rtmp", List[Packet]())
+    testInputPackets("in_6.rtmp", List[Packet](
+      Invoke("publish", 5, List(AmfNull(), "mystream.sdp", "live"))
+    ))
+
+    // OnMetadata ( notify ) somewhere here and Video packets follow up
     testInputPackets("in_7.rtmp", List[Packet]())
     testInputPackets("in_8.rtmp", List[Packet]())
     testInputPackets("in_9.rtmp", List[Packet]())
