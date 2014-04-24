@@ -14,6 +14,7 @@ class ObjectReader(deserializer:Deserializer, objRefs:ObjectReferences) extends 
     readProperty(Map(), bufferItr)
   }
 
+  // TODO: Replace with the Deserializer.readAllProperties
   private def readProperty(properties:Map[String, Any], bufferItr: ByteIterator):Map[String, Any] = {
 
     val name = readString(bufferItr)

@@ -18,7 +18,7 @@ abstract class AmfMixedArray {
   def iterateEntries(f:(String, Any)=>Unit)
 }
 
-class AmfMixedList(val array:List[Any] = List[Any]()) extends AmfMixedArray {
+case class AmfMixedList(array:List[Any] = List[Any]()) extends AmfMixedArray {
 
   override def iterateEntries(f: (String, Any) => Unit): Unit = {
     array.foldLeft(0)((idx, element)=>{
@@ -30,7 +30,7 @@ class AmfMixedList(val array:List[Any] = List[Any]()) extends AmfMixedArray {
   override def maxKey: Int = array.length
 }
 
-class AmfMixedMap(val map:Map[String,Any] = Map[String,Any]()) extends AmfMixedArray {
+case class AmfMixedMap(map:Map[String,Any] = Map[String,Any]()) extends AmfMixedArray {
 
   override def iterateEntries(f: (String, Any) => Unit): Unit = {
     map.foreach(keyVal => {

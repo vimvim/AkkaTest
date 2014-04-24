@@ -13,8 +13,8 @@ import org.scalatest.concurrent._
 import org.scalatest._
 import org.scalatest.matchers.{ClassicMatchers, Matchers, ShouldMatchers}
 
-import rtmp.amf.{AmfNull, AMF0Encoding}
-import rtmp.packet.{Invoke, InvokeDecoder}
+import rtmp.amf.{AmfMixedMap, AmfNull, AMF0Encoding}
+import rtmp.packet.{Notify, NotifyDecoder, Invoke, InvokeDecoder}
 import rtmp.amf.amf0.Amf0Deserializer
 
 /**
@@ -81,6 +81,35 @@ class ParseAmfSpec extends FlatSpec with ClassicMatchers with BinaryTester {
       AmfNull(),
       "mystream.sdp",
       "live"
+    ))))
+  }
+
+  "A parsed data in in_stream_metadata.rtmp" should "match to test data" in {
+
+    val binaryData = readData("in_stream_metadata.rtmp")
+    val decoder = new NotifyDecoder(new DummyLogger())
+    val packet = decoder.decode(new AMF0Encoding(), binaryData)
+
+    assert(packet.equals(Notify("@setDataFrame", List(
+      "onMetaData",
+      AmfMixedMap(Map(
+        "duration" -> 0.0,
+        "filesize" -> 0.0,
+        "videocodecid" -> 2.0,
+        "height" -> 720.0,
+        "videodatarate" -> 195.3125,
+        "compatible_brands" -> "isomavc1",
+        "stereo" -> true,
+        "encoder" -> "Lavf55.12.100",
+        "audiosamplesize" -> 16.0,
+        "minor_version" -> "1",
+        "major_brand" -> "isom",
+        "width" -> 1280.0,
+        "audiosamplerate" -> 44100.0,
+        "framerate" -> 23.976023976023978,
+        "audiocodecid" -> 2.0,
+        "audiodatarate" -> 0.0
+      ))
     ))))
   }
 }
