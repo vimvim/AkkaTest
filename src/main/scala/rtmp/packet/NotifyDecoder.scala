@@ -5,12 +5,13 @@ import akka.util.ByteString
 import rtmp.amf.{Deserializer, AMF3Encoding, EncodingType}
 import rtmp.amf.amf3.Amf3Deserializer
 import rtmp.amf.amf0.{Amf0Deserializer, Amf0Types}
+import akka.event.LoggingAdapter
 
 /**
  * Notify packet decoder
  *
  */
-class NotifyDecoder  extends PacketDecoder {
+class NotifyDecoder(val log:LoggingAdapter)  extends PacketDecoder {
 
   def decode(encodingType: EncodingType, data: ByteString): Packet = {
 

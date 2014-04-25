@@ -5,8 +5,8 @@ import java.net.InetSocketAddress
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
 import java.security.{PrivateKey, PublicKey, KeyFactory, KeyPair}
 
-import rtmp.amf.AmfNull
-import rtmp.packet.{Invoke, Packet}
+import rtmp.amf.{AmfMixedMap, AmfNull}
+import rtmp.packet.{Notify, Invoke, Packet}
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FlatSpec }
 import org.scalatest.concurrent._
@@ -88,7 +88,29 @@ class HandshakeV2Test(_system: ActorSystem)
     ))
 
     // OnMetadata ( notify ) somewhere here and Video packets follow up
-    testInputPackets("in_7.rtmp", List[Packet]())
+    testInputPackets("in_7.rtmp", List[Packet](
+      Notify("@setDataFrame", List(
+        "onMetaData",
+        AmfMixedMap(Map(
+          "duration" -> 0.0,
+          "filesize" -> 0.0,
+          "videocodecid" -> 2.0,
+          "height" -> 720.0,
+          "videodatarate" -> 195.3125,
+          "compatible_brands" -> "isomavc1",
+          "stereo" -> true,
+          "encoder" -> "Lavf55.12.100",
+          "audiosamplesize" -> 16.0,
+          "minor_version" -> "1",
+          "major_brand" -> "isom",
+          "width" -> 1280.0,
+          "audiosamplerate" -> 44100.0,
+          "framerate" -> 23.976023976023978,
+          "audiocodecid" -> 2.0,
+          "audiodatarate" -> 0.0
+        ))
+      ))
+    ))
     testInputPackets("in_8.rtmp", List[Packet]())
     testInputPackets("in_9.rtmp", List[Packet]())
     testInputPackets("in_10.rtmp", List[Packet]())

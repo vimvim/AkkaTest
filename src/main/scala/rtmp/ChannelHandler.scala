@@ -23,7 +23,7 @@ class ChannelHandler(val streamID:Int, val messageHandler:ActorRef) extends Acto
 
   val decoders = Map[Byte, PacketDecoder](
     PacketTypes.TYPE_INVOKE -> new InvokeDecoder(log),
-    PacketTypes.TYPE_NOTIFY -> new NotifyDecoder(),
+    PacketTypes.TYPE_NOTIFY -> new NotifyDecoder(log),
     PacketTypes.TYPE_AUDIO_DATA -> new AudioDecoder(),
     PacketTypes.TYPE_VIDEO_DATA -> new VideoDecoder()
   )
