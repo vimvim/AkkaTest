@@ -21,9 +21,9 @@ import akka.event.Logging
 import rtmp.{Message, HandshakeDataProvider, ConnHandler}
 
 /**
- * Test encrypted RTMP handshake
+ * Test parsing of the packets received by server during publish live stream from client
  */
-class HandshakeV2Test(_system: ActorSystem)
+class PublishStreamTest(_system: ActorSystem)
   extends TestKit(_system)
   with ImplicitSender
   with ShouldMatchers
@@ -56,6 +56,7 @@ class HandshakeV2Test(_system: ActorSystem)
     // Check that ConnHandler send RegisterHandler message to the controller
     val msg = clientHandlerProbe.receiveOne(1000.millisecond)
 
+    // Check handshake response
     testInputResponse("in_1.rtmp", "out_1.rtmp")
 
     // Dump in_2.rtmp contain client handshake response and invoke connect
@@ -94,20 +95,16 @@ class HandshakeV2Test(_system: ActorSystem)
         AmfMixedMap(Map(
           "duration" -> 0.0,
           "filesize" -> 0.0,
+          "creation_time" -> "2013-06-21 21:02:32",
           "videocodecid" -> 2.0,
-          "height" -> 720.0,
+          "height" -> 270.0,
           "videodatarate" -> 195.3125,
-          "compatible_brands" -> "isomavc1",
-          "stereo" -> true,
-          "encoder" -> "Lavf55.12.100",
-          "audiosamplesize" -> 16.0,
-          "minor_version" -> "1",
-          "major_brand" -> "isom",
-          "width" -> 1280.0,
-          "audiosamplerate" -> 44100.0,
-          "framerate" -> 23.976023976023978,
-          "audiocodecid" -> 2.0,
-          "audiodatarate" -> 0.0
+          "compatible_brands" -> "qt  ",
+          "encoder" -> "Lavf55.2.0",
+          "minor_version" -> "537199360",
+          "major_brand" -> "qt  ",
+          "width" -> 480.0,
+          "framerate" -> 2997
         ))
       ))
     ))

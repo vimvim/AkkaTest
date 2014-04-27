@@ -24,7 +24,7 @@ import rtmp.status.{StreamPublishStart, NcConnectSuccess}
 /**
  * Test serialization of the packets sent by server during client publish media flow.
  */
-class PublishSerializationTest extends FlatSpec with ClassicMatchers with BinaryTester {
+class PublishResponsesTest extends FlatSpec with ClassicMatchers with BinaryTester {
 
   val outStream2 = new OutPacketStream(2)
   val outStream3 = new OutPacketStream(3)
