@@ -30,14 +30,18 @@ class Request(input:Array[Byte])(implicit val log:LoggingAdapter) {
   protected def createValidationScheme(): ValidationScheme = {
 
     val schema1 = new ValidationScheme1()
-    if (schema1.validate(input)) schema1
+    if (schema1.validate(input)) {
 
-    val schema0 = new ValidationScheme0()
-    if (!schema0.validate(input)) {
-      log.info("Invalid RTMP connection data detected, you may experience errors")
+      schema1
+    } else {
+
+      val schema0 = new ValidationScheme0()
+      if (!schema0.validate(input)) {
+        log.info("Invalid RTMP connection data detected, you may experience errors")
+      }
+
+      schema0
     }
-
-    schema0
   }
 
 }
