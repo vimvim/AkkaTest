@@ -26,6 +26,8 @@ import rtmp.status.{StreamPublishStart, NcConnectSuccess}
  */
 class PublishResponsesTest extends FlatSpec with ClassicMatchers with BinaryTester {
 
+  override protected def dumpDir:String = "dump/publish"
+
   val outStream2 = new OutPacketStream(2)
   val outStream3 = new OutPacketStream(3)
   val outStream4 = new OutPacketStream(4)

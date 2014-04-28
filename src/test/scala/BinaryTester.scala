@@ -9,13 +9,15 @@ import utils.HexBytesUtil
  */
 trait BinaryTester extends FlatSpec {
 
+  protected def dumpDir:String = "dump"
+
   protected def readData(fileName:String):ByteString = {
     ByteString.fromArray(readBytes(fileName))
   }
 
   protected def readBytes(fileName:String):Array[Byte] = {
 
-    val file: File = new File("dump/"+fileName)
+    val file: File = new File(dumpDir+"/"+fileName)
     if (!file.exists()) {
       throw new FileNotFoundException(fileName)
     }
