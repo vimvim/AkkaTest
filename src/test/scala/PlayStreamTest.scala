@@ -26,7 +26,7 @@ import com.typesafe.config.ConfigFactory
  */
 class PlayStreamTest(_system: ActorSystem) extends RtmpStreamTest(_system: ActorSystem) {
 
-  def this() = this(ActorSystem("TestAkka", ConfigFactory.load))
+  def this() = this(ActorSystem("PlayStreamTest", ConfigFactory.load))
 
   override protected def dumpDir: String = "dump/play"
 
@@ -71,13 +71,12 @@ class PlayStreamTest(_system: ActorSystem) extends RtmpStreamTest(_system: Actor
       Invoke("createStream", 2, List(AmfNull()))
     ))
 
+    // testInputPackets("in_5.rtmp", List[Packet]())
+    // testInputPackets("in_5.rtmp", List[Packet](
+    //  Invoke("play", 0, List(AmfNull(), "mp4:test_sd.mp4"))
+    // ))
+
     /*
-    // Invoke publish ( mystream.sdp, live ) here !!
-    // Invoke(publish, 5, List(AmfNull(), 'mystream.sdp', 'live'))
-    testInputPackets("in_5.rtmp", List[Packet]())
-    testInputPackets("in_6.rtmp", List[Packet](
-      Invoke("publish", 5, List(AmfNull(), "mystream.sdp", "live"))
-    ))
 
     // OnMetadata ( notify ) somewhere here and Video packets follow up
     testInputPackets("in_7.rtmp", List[Packet](

@@ -24,9 +24,10 @@ import com.typesafe.config.ConfigFactory
 /**
  * Test parsing of the packets received by server during publish live stream from client
  */
+/*
 class PublishStreamTest(_system: ActorSystem) extends RtmpStreamTest(_system: ActorSystem) {
 
-  def this() = this(ActorSystem("TestAkka", ConfigFactory.load))
+  def this() = this(ActorSystem("PublishStreamTest", ConfigFactory.load))
 
   override protected def dumpDir:String = "dump/publish"
 
@@ -44,12 +45,6 @@ class PublishStreamTest(_system: ActorSystem) extends RtmpStreamTest(_system: Ac
   }
 
   "An ConnHandler" should "be able to correctly parse client messages" in {
-
-    // Check that ConnHandler send RegisterHandler message to the controller
-    // val msg = clientHandlerProbe.receiveOne(1000.millisecond)
-
-    // Check handshake response
-    // testInputResponse("in_1.rtmp", "out_1.rtmp")
 
     // Dump in_2.rtmp contain client handshake response and invoke connect
     // packet splitted to the two chunks
@@ -110,3 +105,4 @@ class PublishStreamTest(_system: ActorSystem) extends RtmpStreamTest(_system: Ac
     testInputPackets("in_13.rtmp", List[Packet]())
   }
 }
+*/
