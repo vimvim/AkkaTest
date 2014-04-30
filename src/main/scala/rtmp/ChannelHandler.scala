@@ -25,7 +25,11 @@ class ChannelHandler(val streamID:Int, val messageHandler:ActorRef) extends Acto
     PacketTypes.TYPE_INVOKE -> new InvokeDecoder(log),
     PacketTypes.TYPE_NOTIFY -> new NotifyDecoder(log),
     PacketTypes.TYPE_AUDIO_DATA -> new AudioDecoder(),
-    PacketTypes.TYPE_VIDEO_DATA -> new VideoDecoder()
+    PacketTypes.TYPE_VIDEO_DATA -> new VideoDecoder(),
+    // PacketTypes.TYPE_CHUNK_SIZE -> new ChunkSizeDecoder(),
+    PacketTypes.TYPE_CLIENT_BANDWIDTH -> new ClientBWDecoder(),
+    PacketTypes.TYPE_SERVER_BANDWIDTH -> new ServerBWDecoder(),
+    PacketTypes.TYPE_PING -> new ControlDecoder()
   )
 
   var timestamp:Int = 0

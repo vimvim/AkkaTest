@@ -71,10 +71,10 @@ class PlayStreamTest(_system: ActorSystem) extends RtmpStreamTest(_system: Actor
       Invoke("createStream", 2, List(AmfNull()))
     ))
 
-    // testInputPackets("in_5.rtmp", List[Packet]())
-    // testInputPackets("in_5.rtmp", List[Packet](
-    //  Invoke("play", 0, List(AmfNull(), "mp4:test_sd.mp4"))
-    // ))
+    testInputPackets("in_5.rtmp", List[Packet]())
+    testInputPackets("in_6.rtmp", List[Packet](
+      Invoke("play", 0, List(AmfNull(), "mp4:test_sd.mp4"))
+    ))
 
     /*
 

@@ -116,7 +116,9 @@ trait Control {
   def serialize(serializer: Serializer):Serializer = serializer.writeShort(ctrlType)
 }
 
-case class StreamBegin() extends Packet with Control {
+abstract class ControlPacket extends Packet with Control
+
+case class StreamBegin() extends ControlPacket {
 
   def ctrlType:Short = ControlTypes.STREAM_BEGIN
 
@@ -126,7 +128,7 @@ case class StreamBegin() extends Packet with Control {
   }
 }
 
-case class ClientPing(time:Int) extends Packet with Control {
+case class ClientPing(time:Int) extends ControlPacket {
 
   def ctrlType:Short = ControlTypes.PING_CLIENT
 

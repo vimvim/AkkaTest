@@ -78,6 +78,8 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
   val channels = new MutableMap[Int,ChannelInfo]()
   var chunkSize = 128
 
+  var headerID = 1
+
   messageHandler ! RegisterHandler(this.self)
 
   startWith(HandshakeGet, Handshake(CompactByteString("")))
@@ -144,16 +146,19 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
 
         processBuffer(buffer, readSize, (bufferItr)=>{
 
-          log.debug("Got body bytes: {}", readSize)
+          if (readSize>0) {
 
-          val packetData = new Array[Byte](readSize)
-          bufferItr.getBytes(packetData)
+            log.debug("Got body bytes: {}", readSize)
 
-          channelInfo.readRemaining = channelInfo.readRemaining - readSize
+            val packetData = new Array[Byte](readSize)
+            bufferItr.getBytes(packetData)
 
-          log.debug("Remaining body bytes: {}", channelInfo.readRemaining)
+            channelInfo.readRemaining = channelInfo.readRemaining - readSize
 
-          channelInfo.channelHandler ! ChunkReceived(header, CompactByteString(packetData))
+            log.debug("Remaining body bytes: {}", channelInfo.readRemaining)
+
+            channelInfo.channelHandler ! ChunkReceived(header, CompactByteString(packetData))
+          }
 
           (ReceiveHeader, (buffer)=>{
             Handshake(buffer)
@@ -286,12 +291,16 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
    */
   def decodeHeader(bufferItr:ByteIterator):(ConnState, DataFunc) = {
 
+    log.debug("Decode header: {}", headerID)
+
     val firstByte = bufferItr.getByte & 0xff
 
     val headerDecoder = getHeaderDecoder(firstByte)
     val header = headerDecoder.decode(firstByte, bufferItr)
 
     log.debug("Got header: {}", header)
+
+    headerID = headerID + 1
 
     // goto(ReceiveBody) using ReceiveBodyData(bufferItr.toByteString, header)
     (ReceiveBody, (buffer)=>{
