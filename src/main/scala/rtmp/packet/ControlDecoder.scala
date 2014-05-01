@@ -15,10 +15,10 @@ class ControlDecoder extends PacketDecoder {
 
     val dataIterator = data.iterator
 
-    val ctrlType = dataIterator.getShort(ByteOrder.LITTLE_ENDIAN)
+    val ctrlType = dataIterator.getShort(ByteOrder.BIG_ENDIAN)
     ctrlType match {
       case ControlTypes.STREAM_BEGIN => StreamBegin()
-      case ControlTypes.PING_CLIENT => ClientPing(dataIterator.getInt(ByteOrder.LITTLE_ENDIAN))
+      case ControlTypes.PING_CLIENT => ClientPing(dataIterator.getInt(ByteOrder.BIG_ENDIAN))
     }
   }
 }

@@ -11,7 +11,7 @@ import akka.testkit._
 import akka.event.Logging
 
 import rtmp.amf.{AmfMixedMap, AmfNull}
-import rtmp.packet.{Notify, Invoke, Packet}
+import rtmp.packet.{ServerBW, Notify, Invoke, Packet}
 import rtmp.{Message, HandshakeDataProvider, ConnHandler}
 
 import org.scalatest.{ BeforeAndAfterAll, FlatSpec }
@@ -66,7 +66,9 @@ class PlayStreamTest(_system: ActorSystem) extends RtmpStreamTest(_system: Actor
       ))
     ))
 
-    testInputPackets("in_3.rtmp", List[Packet]())
+    testInputPackets("in_3.rtmp", List[Packet](
+      ServerBW(10000000)
+    ))
     testInputPackets("in_4.rtmp", List[Packet](
       Invoke("createStream", 2, List(AmfNull()))
     ))

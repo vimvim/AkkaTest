@@ -13,6 +13,6 @@ class ClientBWDecoder extends PacketDecoder {
 
     val dataIterator = data.iterator
 
-    ClientBW(dataIterator.getInt(ByteOrder.LITTLE_ENDIAN), dataIterator.getByte)
+    ClientBW(dataIterator.getInt(ByteOrder.BIG_ENDIAN), dataIterator.getByte)
   }
 }

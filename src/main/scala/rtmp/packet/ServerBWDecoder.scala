@@ -13,6 +13,6 @@ class ServerBWDecoder extends PacketDecoder {
 
     val dataIterator = data.iterator
 
-    ServerBW(dataIterator.getInt(ByteOrder.LITTLE_ENDIAN))
+    ServerBW(dataIterator.getInt(ByteOrder.BIG_ENDIAN))
   }
 }
