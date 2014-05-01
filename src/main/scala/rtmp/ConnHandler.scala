@@ -46,7 +46,7 @@ case class DecodeHeaderData(buffer:ByteString) extends Data
 case class ReceiveBodyData(header:Header, buffer:ByteString) extends Data
 
 
-class ChannelInfo(var channelHandler:ActorRef, var packetSize:Int) {
+class ChannelInfo(val channelHandler:ActorRef, var packetSize:Int) {
   var readRemaining:Int = packetSize
 }
 
@@ -156,6 +156,14 @@ class ConnHandler(connection: ActorRef, remote: InetSocketAddress, messageHandle
             channelInfo.readRemaining = channelInfo.readRemaining - readSize
 
             log.debug("Remaining body bytes: {}", channelInfo.readRemaining)
+
+            if (channelInfo.readRemaining==0) {
+              // All data received for packet so if channel info will not be updated ( using FullHeader )
+              // we now expect to read another packet of the previously specified size
+              channelInfo.readRemaining = channelInfo.packetSize
+
+              log.debug("Reset remaining body size: {}", channelInfo.packetSize)
+            }
 
             channelInfo.channelHandler ! ChunkReceived(header, CompactByteString(packetData))
           }
