@@ -1,0 +1,78 @@
+
+
+[TRACE] [Red5_Scheduler_Worker-10] org.red5.server.stream.PlayEngine - ts: 0
+[TRACE] [Red5_Scheduler_Worker-10] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - Channel id: 5
+[TRACE] [Red5_Scheduler_Worker-10] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - Encode video message
+[DEBUG] [Red5_Scheduler_Worker-10] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - Encode HEADER_NEW
+[TRACE] [Red5_Scheduler_Worker-10] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - CHUNK, E, Header [channelId=5, dataType=9, timerBase=0, timerDelta=0, size=48, streamId=1, extendedTimestamp=0], 0
+[TRACE] [Red5_Scheduler_Worker-10] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 14 size: 60
+
+[DEBUG] [Red5_Scheduler_Worker-14] org.red5.io.mp4.impl.MP4Reader - Playback #0 MP4Frame type=9, time=0.0, timeOffset=40, size=37803, offset=36558, keyframe=true
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.io.mp4.impl.MP4Reader - [23, 1, 0, 0, 0]
+
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - Channel id: 5
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - Encode video message
+[DEBUG] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - Encode HEADER_SAME_SOURCE
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - CHUNK, E, Header [channelId=5, dataType=9, timerBase=0, timerDelta=0, size=37808, streamId=1, extendedTimestamp=0], 1
+[DEBUG] [Red5_Scheduler_Worker-15] org.red5.server.stream.PlayEngine - Push / pull already running
+[DEBUG] [Red5_Scheduler_Worker-16] org.red5.server.stream.PlayEngine - Push / pull already running
+[DEBUG] [Red5_Scheduler_Worker-17] org.red5.server.stream.PlayEngine - Push / pull already running
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 16 size: 2057
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 17 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 18 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 19 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 20 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 21 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 22 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 23 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 24 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 25 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 26 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 27 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 28 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 29 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 30 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 31 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 32 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 33 size: 2050
+[TRACE] [Red5_Scheduler_Worker-14] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 34 size: 945
+
+[DEBUG] [Red5_Scheduler_Worker-20] org.red5.io.mp4.impl.MP4Reader - Playback #3 MP4Frame type=9, time=0.04, timeOffset=80, size=789, offset=74361, keyframe=false
+[TRACE] [Red5_Scheduler_Worker-20] org.red5.io.mp4.impl.MP4Reader - [39, 1, 0, 0, 40]
+[TRACE] [Red5_Scheduler_Worker-20] org.red5.server.stream.PlayEngine - isClientBufferFull: timestamp 23 delta 134 buffered -111 buffer duration 2000
+[TRACE] [Red5_Scheduler_Worker-20] org.red5.server.stream.PlayEngine - ts: 40
+
+[TRACE] [Red5_Scheduler_Worker-20] org.red5.server.stream.PlayEngine - doPushMessage: TYPE_VIDEO_DATA
+[DEBUG] [Red5_Scheduler_Worker-20] org.red5.server.stream.consumer.ConnectionConsumer - Message timestamp: 40
+[TRACE] [Red5_Scheduler_Worker-20] org.red5.server.stream.consumer.ConnectionConsumer - Data type: 9
+
+[DEBUG] [Red5_Scheduler_Worker-20] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - Encode HEADER_SAME_SOURCE
+[TRACE] [Red5_Scheduler_Worker-20] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - CHUNK, E, Header [channelId=5, dataType=9, timerBase=0, timerDelta=40, size=794, streamId=1, extendedTimestamp=0], 1
+[TRACE] [Red5_Scheduler_Worker-20] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 37 size: 802
+
+[DEBUG] [Red5_Scheduler_Worker-23] org.red5.io.mp4.impl.MP4Reader - Playback #6 MP4Frame type=9, time=0.08, timeOffset=0, size=205, offset=75150, keyframe=false
+[TRACE] [Red5_Scheduler_Worker-23] org.red5.io.mp4.impl.MP4Reader - [39, 1, 0, 0, 40]
+
+[TRACE] [Red5_Scheduler_Worker-23] org.red5.server.stream.PlayEngine - ts: 80
+
+[TRACE] [Red5_Scheduler_Worker-23] org.red5.server.stream.PlayEngine - doPushMessage: TYPE_VIDEO_DATA
+[DEBUG] [Red5_Scheduler_Worker-23] org.red5.server.stream.consumer.ConnectionConsumer - Message timestamp: 80
+[TRACE] [Red5_Scheduler_Worker-23] org.red5.server.stream.consumer.ConnectionConsumer - Data type: 9
+[TRACE] [Red5_Scheduler_Worker-23] org.red5.server.stream.consumer.ConnectionConsumer - Video data
+
+[TRACE] [Red5_Scheduler_Worker-23] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - Encode video message
+[DEBUG] [Red5_Scheduler_Worker-23] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - Encode HEADER_SAME_SOURCE
+[TRACE] [Red5_Scheduler_Worker-23] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - CHUNK, E, Header [channelId=5, dataType=9, timerBase=40, timerDelta=40, size=210, streamId=1, extendedTimestamp=0], 1
+[TRACE] [Red5_Scheduler_Worker-23] org.red5.server.net.rtmpe.RTMPEIoFilter - Outgoing message for session id: Y7YQLF1KRM0W2 packet: 40 size: 218
+
+……………………………….
+
+DEBUG] [Red5_Scheduler_Worker-32] org.red5.io.mp4.impl.MP4Reader - Playback #15 MP4Frame type=8, time=0.2089795918367347, timeOffset=0, size=235, offset=103438, keyframe=false
+[TRACE] [Red5_Scheduler_Worker-32] org.red5.server.stream.PlayEngine - ts: 209
+[DEBUG] [Red5_Scheduler_Worker-32] org.red5.server.stream.consumer.ConnectionConsumer - Message timestamp: 209
+[TRACE] [Red5_Scheduler_Worker-32] org.red5.server.net.rtmp.codec.RTMPProtocolEncoder - CHUNK, E, Header [channelId=6, dataType=8, timerBase=186, timerDelta=23, size=237, streamId=1, extendedTimestamp=0], 1
+
+[DEBUG] [Red5_Scheduler_Worker-1] org.red5.io.mp4.impl.MP4Reader - Playback #16 MP4Frame type=8, time=0.23219954648526078, timeOffset=0, size=230, offset=103673, keyframe=false
+[TRACE] [Red5_Scheduler_Worker-1] org.red5.server.stream.PlayEngine - ts: 232
+[TRACE] [Red5_Scheduler_Worker-1] org.red5.server.stream.PlayEngine - sendMessage: streamStartTS=0, length=-1000, streamOffset=0, timestamp=232
+[DEBUG] [Red5_Scheduler_Worker-1] org.red5.server.stream.consumer.ConnectionConsumer - Message timestamp: 232
