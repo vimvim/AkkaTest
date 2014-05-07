@@ -10,19 +10,111 @@ import scala.collection.mutable.ListBuffer
 
 import org.jcodec.api.FrameGrab
 import org.jcodec.codecs.h264.mp4.AvcCBox
-import org.jcodec.codecs.h264.H264Decoder
+import org.jcodec.codecs.h264.{H264Utils, H264Decoder}
 
 import org.jcodec.common.NIOUtils.readableFileChannel
-import org.jcodec.common.model.{ColorSpace, Picture}
-import org.jcodec.common.JCodecUtil
+import org.jcodec.common.NIOUtils.writableFileChannel
+import org.jcodec.common.model.{Packet, ColorSpace, Picture}
+import org.jcodec.common.{DemuxerTrack, JCodecUtil}
 
 import rtmp.tests.StreamDumpReader
+import org.jcodec.containers.mp4._
+import org.jcodec.containers.mp4.boxes.Box
+import org.jcodec.codecs.h264.io.model.NALUnit
 
 
 /**
  *
  */
 object JCodecTest extends App {
+
+
+  /**
+   * Method will parse MP4 file,  extract SPS,PPS NALU and other information
+   * required for streaming purposes.
+   *
+   */
+  def parseMP4 = {
+
+    val demuxer = new MP4Demuxer(readableFileChannel("streams/test_sd.mp4"))
+    val videoTrack1 = demuxer.getVideoTrack
+    val sampleEntries = videoTrack1.getSampleEntries
+    val sampleEntry = sampleEntries.head
+    val codecName = sampleEntry.getFourcc
+
+    val avcBox = Box.findFirst(sampleEntry, classOf[AvcCBox], AvcCBox.fourcc())
+
+    val decoder = new H264Decoder()
+    decoder.addSps(avcBox.getSpsList)
+    decoder.addPps(avcBox.getPpsList)
+
+    for ( i  <- 0 to videoTrack1.getFrameCount ) {
+
+      val packet = videoTrack1.getFrames(1)
+      val data = packet.getData
+
+      val buffer  = Picture.create(1920, 1088, ColorSpace.YUV444)
+      val frame = decoder.decodeFrame(data, buffer.getData)
+      val image = JCodecUtil.toBufferedImage(frame)
+
+      ImageIO.write(image, "png", new File(System.getProperty("user.home")+"/frame_1"))
+
+      /*
+      while (data.remaining()>0) {
+        val nalUnit = NALUnit.read(data)
+      }
+      */
+    }
+  }
+
+  /**
+   * Compose MP4 file from H.264 stream
+   *
+   */
+  def composeMP4 = {
+
+    val dumpReader = new StreamDumpReader("dump", "video", "bin.rtmp", 0)
+
+    // REad first packet which is contain sps/pps
+    val firstPacket = dumpReader.readAsBuffer()
+    readPacketHeader(firstPacket)
+
+    val avcBox = new AvcCBox()
+    avcBox.parse(firstPacket)
+
+    val spsList = avcBox.getSpsList
+    val ppsList = avcBox.getPpsList
+
+    val muxer = new MP4Muxer(writableFileChannel("streams/out.mp4"), Brand.MOV)
+
+    val videoTrack = muxer.addTrackForCompressed(TrackType.VIDEO, 25)
+
+    while (dumpReader.haveNext) {
+
+      val packet = dumpReader.readAsBuffer()
+      readPacketHeader(packet)
+
+      val nalLenBytes = avcBox.getNalLengthSize
+
+      val nalUnits = getNalus(packet, nalLenBytes)
+
+      val avcFrame = ByteBuffer.allocate(1024)
+      H264Utils.joinNALUnits(nalUnits, avcFrame)
+
+      H264Utils.wipePS(avcFrame, spsList, ppsList)
+      H264Utils.encodeMOVPacket(avcFrame, spsList, ppsList)
+      val mp4Packet = new MP4Packet(new Packet(frame, data), frame.getPts(), 0)
+
+      videoTrack.addFrame(mp4Packet)
+    }
+
+    val sampleEntry = MP4Muxer.videoSampleEntry("avc1", size, "JCodec")
+
+    val avcC = new AvcCBox(sps.profile_idc, 0, sps.level_idc, write(spss), write(ppss));
+    se.add(avcC);
+    track.addSampleEntry(se);
+
+  }
 
   def testDecodeStream = {
 
