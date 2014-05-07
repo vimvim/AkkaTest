@@ -14,13 +14,19 @@ import org.jcodec.codecs.h264.{H264Utils, H264Decoder}
 
 import org.jcodec.common.NIOUtils.readableFileChannel
 import org.jcodec.common.NIOUtils.writableFileChannel
-import org.jcodec.common.model.{Packet, ColorSpace, Picture}
+import org.jcodec.common.model.{Size, Packet, ColorSpace, Picture}
 import org.jcodec.common.{DemuxerTrack, JCodecUtil}
 
 import rtmp.tests.StreamDumpReader
 import org.jcodec.containers.mp4._
-import org.jcodec.containers.mp4.boxes.Box
-import org.jcodec.codecs.h264.io.model.NALUnit
+import org.jcodec.containers.mp4.boxes.{VideoSampleEntry, Box}
+import org.jcodec.codecs.h264.io.model.{NALUnitType, SeqParameterSet, NALUnit}
+import org.jcodec.containers.mp4.muxer.{FramesMP4MuxerTrack, MP4Muxer}
+import org.jcodec.containers.mp4.demuxer.MP4Demuxer
+
+import org.jcodec.codecs.h264.H264Utils.getPicHeightInMbs
+import java.util
+import org.jcodec.codecs.raw.V210Encoder
 
 
 /**
@@ -34,36 +40,38 @@ object JCodecTest extends App {
    * required for streaming purposes.
    *
    */
-  def parseMP4 = {
+  def parseMP4() = {
 
     val demuxer = new MP4Demuxer(readableFileChannel("streams/test_sd.mp4"))
     val videoTrack1 = demuxer.getVideoTrack
     val sampleEntries = videoTrack1.getSampleEntries
-    val sampleEntry = sampleEntries.head
+    val sampleEntry:VideoSampleEntry = sampleEntries.head.asInstanceOf[VideoSampleEntry]
     val codecName = sampleEntry.getFourcc
 
-    val avcBox = Box.findFirst(sampleEntry, classOf[AvcCBox], AvcCBox.fourcc())
+    // SampleEntry se = videoTrack1.getSampleEntries()[0];
+
+    val avcBox:AvcCBox = H264Utils.parseAVCC(sampleEntry)
+
+    // val avcBox = Box.findFirst(sampleEntry, classOf[AvcCBox], AvcCBox.fourcc())
 
     val decoder = new H264Decoder()
     decoder.addSps(avcBox.getSpsList)
     decoder.addPps(avcBox.getPpsList)
 
-    for ( i  <- 0 to videoTrack1.getFrameCount ) {
+    for ( i  <- 0.toLong to videoTrack1.getFrameCount ) {
 
-      val packet = videoTrack1.getFrames(1)
+      val packet = videoTrack1.nextFrame()
       val data = packet.getData
 
+      // TODO: NALU in the MP4/MOV composed in the same way ( length followed by NAL ) as in the RTp/RTMP packets so we can
+      // TODO: use this function to split it's
+      val nalUnits = H264Utils.splitMOVPacket(data, avcBox)
+
       val buffer  = Picture.create(1920, 1088, ColorSpace.YUV444)
-      val frame = decoder.decodeFrame(data, buffer.getData)
-      val image = JCodecUtil.toBufferedImage(frame)
+      val frame = decoder.decodeFrame(nalUnits, buffer.getData)
+      // val image = JCodecUtil.toBufferedImage(frame)
 
-      ImageIO.write(image, "png", new File(System.getProperty("user.home")+"/frame_1"))
-
-      /*
-      while (data.remaining()>0) {
-        val nalUnit = NALUnit.read(data)
-      }
-      */
+      // ImageIO.write(image, "png", new File(System.getProperty("user.home")+"/frame_1"))
     }
   }
 
@@ -71,7 +79,7 @@ object JCodecTest extends App {
    * Compose MP4 file from H.264 stream
    *
    */
-  def composeMP4 = {
+  def composeMP4() = {
 
     val dumpReader = new StreamDumpReader("dump", "video", "bin.rtmp", 0)
 
@@ -85,38 +93,129 @@ object JCodecTest extends App {
     val spsList = avcBox.getSpsList
     val ppsList = avcBox.getPpsList
 
-    val muxer = new MP4Muxer(writableFileChannel("streams/out.mp4"), Brand.MOV)
+    val muxer = new MP4Muxer(writableFileChannel("streams/out.mp4"), Brand.MP4)
+    val videoTrack = muxer.addTrack(TrackType.VIDEO, 25000)
 
-    val videoTrack = muxer.addTrackForCompressed(TrackType.VIDEO, 25)
+    var frameIdx = 0
 
     while (dumpReader.haveNext) {
 
       val packet = dumpReader.readAsBuffer()
       readPacketHeader(packet)
 
-      val nalLenBytes = avcBox.getNalLengthSize
+      val movPacket = ByteBuffer.allocate(1024)
 
-      val nalUnits = getNalus(packet, nalLenBytes)
+      val nalUnits = H264Utils.splitMOVPacket(packet, avcBox)
+      for( nalUnitData <- nalUnits ) {
 
-      val avcFrame = ByteBuffer.allocate(1024)
-      H264Utils.joinNALUnits(nalUnits, avcFrame)
+        val nalUnit = NALUnit.read(nalUnitData)
+        nalUnit.`type` match {
+          case NALUnitType.PPS =>
+          case NALUnitType.SPS =>
+          case NALUnitType.IDR_SLICE =>
+          case NALUnitType.NON_IDR_SLICE =>
+        }
+      }
 
-      H264Utils.wipePS(avcFrame, spsList, ppsList)
-      H264Utils.encodeMOVPacket(avcFrame, spsList, ppsList)
-      val mp4Packet = new MP4Packet(new Packet(frame, data), frame.getPts(), 0)
+      // val nalLenBytes = avcBox.getNalLengthSize
+
+      // val nalUnits = getNalus(packet, nalLenBytes)
+
+      // val avcFrame = ByteBuffer.allocate(1024)
+      // H264Utils.joinNALUnits(nalUnits, avcFrame)
+
+      // H264Utils.wipePS(avcFrame, spsList, ppsList)
+
+      // H264Utils.encodeMOVPacket(avcFrame)
+
+      // val mp4Packet = new MP4Packet(new Packet(frame, data), frame.getPts(), 0)
+      val mp4Packet = new MP4Packet(movPacket, frameIdx * 1001, 25000, 1001, frameIdx, true, null, frameIdx * 1001, 0)
 
       videoTrack.addFrame(mp4Packet)
+
+      frameIdx = frameIdx + 1
     }
+
+    val sps:SeqParameterSet = SeqParameterSet.read(spsList.head)
+    val size:Size = new Size((sps.pic_width_in_mbs_minus1 + 1) << 4, getPicHeightInMbs(sps) << 4)
 
     val sampleEntry = MP4Muxer.videoSampleEntry("avc1", size, "JCodec")
 
-    val avcC = new AvcCBox(sps.profile_idc, 0, sps.level_idc, write(spss), write(ppss));
-    se.add(avcC);
-    track.addSampleEntry(se);
+    // val avcC = new AvcCBox(sps.profile_idc, 0, sps.level_idc, write(spss), write(ppss))
+    sampleEntry.add(avcBox)
+    videoTrack.addSampleEntry(sampleEntry)
 
+    muxer.writeHeader()
   }
 
-  def testDecodeStream = {
+  def mp4Generator() = {
+
+    val width = 640
+    val height = 480
+
+    def createPicture:Picture = {
+
+      def drawGrad(y:Array[Int], ySize:Size) {
+
+        val blockX = ySize.getWidth / 10
+        val blockY = ySize.getHeight / 7
+
+        fillGrad(y, ySize.getWidth, blockX, blockY, 9 * blockX, 3 * blockY, 0.2, 0.1, 8)
+        fillGrad(y, ySize.getWidth, blockX, 4 * blockY, 9 * blockX, 6 * blockY, 0.2, 0.1, 10)
+      }
+
+      def fillGrad(y:Array[Int], stride:Int, left:Int, top:Int, right:Int, bottom:Int, from:Double, to:Double, quant:Int) {
+
+        val step = stride + left - right
+        var off = top * stride + left
+
+        for( j <- top to bottom ) {
+
+          for ( i <- left to right ) {
+
+            // y[off] = colr((i - left) / (right - left), (j - top) / (bottom - top), from, to, quant)
+            off = off + 1
+          }
+          off = off + step
+        }
+      }
+
+      def colr(i:Double, j:Double, from:Double, to:Double, quant:Int):Int = {
+
+        val v1:Int = ((1 << quant) * (from + (to - from) * i)).toInt
+        val v2 = 10 - quant
+
+        v1 << v2
+      }
+
+      val pic = Picture.create(width, height, ColorSpace.YUV422_10)
+      util.Arrays.fill(pic.getPlaneData(1), 512)
+      util.Arrays.fill(pic.getPlaneData(2), 512)
+
+      drawGrad(pic.getPlaneData(0), new Size(pic.getWidth, pic.getHeight))
+
+      pic
+    }
+
+    val encoder:V210Encoder = new V210Encoder()
+    val muxer:MP4Muxer = new MP4Muxer(writableFileChannel("streams/generated.mp4"))
+
+    val videoTrack:FramesMP4MuxerTrack = muxer.addVideoTrack("v210", new Size(width, height), "jcodec", 24000)
+
+    for( frameIdx <- 0 to 1000 ) {
+
+      val picture = createPicture
+
+      val buffer = ByteBuffer.allocate(width * height * 10)
+      val frame = encoder.encodeFrame(buffer, picture)
+
+      videoTrack.addFrame(new MP4Packet(frame, frameIdx * 1001, 24000, 1001, frameIdx, true, null, frameIdx * 1001, 0))
+    }
+
+    muxer.writeHeader()
+  }
+
+  def testDecodeStream() = {
 
     // This is AVC config !!! . Use avcBox.parse(...)
 
@@ -144,21 +243,19 @@ object JCodecTest extends App {
       val buffer  = Picture.create(1920, 1088, ColorSpace.YUV444)
       // val frame = decoder.decodeFrame(packet, buffer.getData)
       val frame = decoder.decodeFrame(nalUnits, buffer.getData)
-      val image = JCodecUtil.toBufferedImage(frame)
+      // val image = JCodecUtil.toBufferedImage(frame)
 
-      ImageIO.write(image, "png", new File(System.getProperty("user.home")+"/frame_1"))
+      // ImageIO.write(image, "png", new File(System.getProperty("user.home")+"/frame_1"))
     }
   }
 
-  def testDecodeFile = {
+  def testDecodeFile() = {
 
     val startSec = 1.632
     val grab = new FrameGrab(readableFileChannel("/home/vim/Videos/test_video.mp4"))
-    grab.seek(startSec)
+    val frame = grab.seekToSecondPrecise(startSec)
 
-    val frame = grab.getFrame
-
-    ImageIO.write(frame, "png", new File(System.getProperty("user.home")+"/frame_1"))
+    // ImageIO.write(frame, "png", new File(System.getProperty("user.home")+"/frame_1"))
   }
 
   private def getNalus(packet:ByteBuffer, nalLenBytes:Int):List[ByteBuffer] = {
@@ -236,6 +333,8 @@ object JCodecTest extends App {
     val compositionTime = ((header(2) & 0xff) << 16) + ((header(3) & 0xff) << 8) + (header(4) & 0xff)
   }
 
-  // testDecodeFile
-  testDecodeStream
+  // testDecodeFile()
+  // testDecodeStream()
+  composeMP4()
+  // parseMP4()
 }
