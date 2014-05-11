@@ -34,6 +34,31 @@ import org.jcodec.codecs.raw.V210Encoder
  */
 object JCodecTest extends App {
 
+  /**
+   * Method will read frames ( NAL units ) from one MP4 file and pack into another
+   *
+   */
+
+  def rebuildMP4() = {
+
+    val reader = new MP4Reader("streams/test_sd.mp4")
+    val writer = new MP4Writer("streams/out.mp4", reader.avcBox)
+
+    println(s"Total frames: ${reader.framesCount}")
+
+    for( frameIdx <- 1.toLong to reader.framesCount) {
+
+      println(s"Process frame: $frameIdx")
+      // TODO: Needs to return frame record. Keep pts  ??
+      // TODO: Go thru all file , index frames, get positions offset, timestamp marks and keyframe marks
+      val frame = reader.readFrame()
+      writer.writeFrame(frame)
+    }
+
+    writer.complete()
+
+    println(s"Finished")
+  }
 
   /**
    * Method will parse MP4 file,  extract SPS,PPS NALU and other information
@@ -94,7 +119,7 @@ object JCodecTest extends App {
     val ppsList = avcBox.getPpsList
 
     val muxer = new MP4Muxer(writableFileChannel("streams/out.mp4"), Brand.MP4)
-    val videoTrack = muxer.addTrack(TrackType.VIDEO, 25000)
+    val videoTrack = muxer.addTrack(TrackType.VIDEO, 25)
 
     var frameIdx = 0
 
@@ -103,17 +128,24 @@ object JCodecTest extends App {
       val packet = dumpReader.readAsBuffer()
       readPacketHeader(packet)
 
-      val movPacket = ByteBuffer.allocate(1024)
+      val filteredNalUnits = new java.util.ArrayList[ByteBuffer]()
 
       val nalUnits = H264Utils.splitMOVPacket(packet, avcBox)
       for( nalUnitData <- nalUnits ) {
 
         val nalUnit = NALUnit.read(nalUnitData)
+        println("NAL:"+nalUnit.`type`)
         nalUnit.`type` match {
+
           case NALUnitType.PPS =>
+            println("   remove PPS")
+            ppsList.add(nalUnitData)
+
           case NALUnitType.SPS =>
-          case NALUnitType.IDR_SLICE =>
-          case NALUnitType.NON_IDR_SLICE =>
+            println("   remove SPS")
+            spsList.add(nalUnitData)
+
+          case _ => filteredNalUnits.add(nalUnitData)
         }
       }
 
@@ -128,21 +160,47 @@ object JCodecTest extends App {
 
       // H264Utils.encodeMOVPacket(avcFrame)
 
+
+
+      val movPacket = ByteBuffer.allocate(1024)
+      H264Utils.joinNALUnits(filteredNalUnits, movPacket)
+      H264Utils.encodeMOVPacket(movPacket)
+
+      // new MP4Packet(
+      //  result,      Bytebuffer that contains encoded frame
+      //  i,           Presentation timestamp ( think seconds ) expressed in timescale units ( just multiply second by
+      //               timescale value below. This is to avoid floats.
+      //                   Example: timescale = 25, pts = 0, 1, 2, 3, 4, 5 .... ( PAL 25 fps )
+      //                   Example: timescale = 30000, pts = 1001, 2002, 3003, 4004, 5005, 6006, 7007 ( NTSC 29.97 fps )
+      //                            timescale, // See above
+      //  1,           Duration of a frame in timescale units ( think seconds multiplied by number above)
+      //                   Examlle: timescale = 25, duration = 1 ( PAL 25 fps )
+      //                   Example: timescale = 30000, duration = 1001 ( NTSC 29.97 fps )
+      //  frameNo,     Just a number of frame, doesn't have anything to do with timing
+      //  true,        Is it an I-frame, i.e. is this a seek point? Players use this information to instantly know where to seek
+      //  null,        just ignore, should be null. This is used by the older brother of MP4 - Apple Quicktime which supports
+      //               tape timecode
+      //  i,           just put the same as pts above
+      //  0            sample entry, should be 0
+      // )
+
       // val mp4Packet = new MP4Packet(new Packet(frame, data), frame.getPts(), 0)
-      val mp4Packet = new MP4Packet(movPacket, frameIdx * 1001, 25000, 1001, frameIdx, true, null, frameIdx * 1001, 0)
+      val mp4Packet = new MP4Packet(movPacket, frameIdx, 25, 1, frameIdx, true, null, frameIdx, 0)
 
       videoTrack.addFrame(mp4Packet)
 
       frameIdx = frameIdx + 1
     }
 
-    val sps:SeqParameterSet = SeqParameterSet.read(spsList.head)
-    val size:Size = new Size((sps.pic_width_in_mbs_minus1 + 1) << 4, getPicHeightInMbs(sps) << 4)
+    // val sps:SeqParameterSet = SeqParameterSet.read(spsList.head)
+    // val size:Size = new Size((sps.pic_width_in_mbs_minus1 + 1) << 4, getPicHeightInMbs(sps) << 4)
 
-    val sampleEntry = MP4Muxer.videoSampleEntry("avc1", size, "JCodec")
+    // val sampleEntry = MP4Muxer.videoSampleEntry("avc1", size, "JCodec")
+    val sampleEntry = H264Utils.createMOVSampleEntry(spsList, ppsList)
 
     // val avcC = new AvcCBox(sps.profile_idc, 0, sps.level_idc, write(spss), write(ppss))
-    sampleEntry.add(avcBox)
+    // sampleEntry.add(avcBox)
+
     videoTrack.addSampleEntry(sampleEntry)
 
     muxer.writeHeader()
@@ -335,6 +393,7 @@ object JCodecTest extends App {
 
   // testDecodeFile()
   // testDecodeStream()
-  composeMP4()
+  // composeMP4()
   // parseMP4()
+  rebuildMP4()
 }
