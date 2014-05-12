@@ -18,18 +18,20 @@ class MP4Writer(filename:String, avcBox: AvcCBox) {
   val ppsList = avcBox.getPpsList
 
   val muxer = new MP4Muxer(writableFileChannel(filename), Brand.MP4)
-  val videoTrack = muxer.addTrack(TrackType.VIDEO, 25)
+  val videoTrack = muxer.addTrack(TrackType.VIDEO, 25000)
 
   var frameIdx = 0
 
-  def writeFrame(nalUnits:List[ByteBuffer]) = {
+  def writeFrame(frame:MP4Frame) = {
 
-    val filteredNalUnits = new java.util.ArrayList[ByteBuffer]()
+    // val filteredNalUnits = new java.util.ArrayList[ByteBuffer]()
 
-    for( nalUnitData <- nalUnits ) {
+    val movPacket = ByteBuffer.allocate(1024*100)
+
+    for( nalUnitData <- frame.nalUnits ) {
 
       val nalUnit = NALUnit.read(nalUnitData)
-      println("NAL:"+nalUnit.`type`)
+      println("   NAL:"+nalUnit.`type`)
       nalUnit.`type` match {
 
         case NALUnitType.PPS =>
@@ -40,13 +42,21 @@ class MP4Writer(filename:String, avcBox: AvcCBox) {
           println("   remove SPS")
           spsList.add(nalUnitData)
 
-        case _ => filteredNalUnits.add(nalUnitData)
+        case _ =>
+          // filteredNalUnits.add(nalUnitData)
+          movPacket.putInt(nalUnitData.limit())
+          movPacket.put(nalUnitData)
       }
     }
 
-    val movPacket = ByteBuffer.allocate(1024*100)
-    H264Utils.joinNALUnits(filteredNalUnits, movPacket)
-    H264Utils.encodeMOVPacket(movPacket)
+    movPacket.flip()
+
+    // H264Utils.joinNALUnits(filteredNalUnits, movPacket)
+    // H264Utils.encodeMOVPacket(movPacket)
+    // for( nalUnitData <- filteredNalUnits ) {
+    //   movPacket.putInt(nalUnitData.)
+    // }
+
 
     // new MP4Packet(
     //  result,      Bytebuffer that contains encoded frame
@@ -67,7 +77,7 @@ class MP4Writer(filename:String, avcBox: AvcCBox) {
     // )
 
     // val mp4Packet = new MP4Packet(new Packet(frame, data), frame.getPts(), 0)
-    val mp4Packet = new MP4Packet(movPacket, frameIdx, 25, 1, frameIdx, true, null, frameIdx, 0)
+    val mp4Packet = new MP4Packet(movPacket, frame.pts, frame.ts, frame.duration, frameIdx, frame.keyFrame, null, frame.pts, 0)
 
     videoTrack.addFrame(mp4Packet)
 

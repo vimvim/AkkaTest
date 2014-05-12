@@ -36,11 +36,10 @@ class MP4Reader(filename:String) {
     val packet = videoTrack1.nextFrame().asInstanceOf[MP4Packet]
     val data = packet.getData
 
-    println(s" MediaPTS:${packet.getMediaPts} PTS:${packet.getPts} TS:${packet.getTimescale} Duration:${packet.getDuration} FrameNO:${packet.getFrameNo} KeyFrame:${packet.isKeyFrame}")
+    println(s" MediaPTS:${packet.getMediaPts} PTS:${packet.getPts} TS:${packet.getTimescale} Duration:${packet.getDuration} FrameNO:${packet.getFrameNo} KeyFrame:${packet.isKeyFrame} offset:${packet.getFileOff} size:${packet.getSize}")
 
     val nalUnits = H264Utils.splitMOVPacket(data, avcBox).toArray.toList.asInstanceOf[List[ByteBuffer]]
 
-    new MP4FileFrame(packet.getFileOff, packet.getSize, packet.getPts, packet.getTimescale, packet.isKeyFrame, nalUnits)
+    new MP4FileFrame(packet.getFileOff, packet.getSize, packet.getPts, packet.getTimescale, packet.getDuration, packet.isKeyFrame, nalUnits)
   }
-
 }

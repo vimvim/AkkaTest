@@ -11,8 +11,8 @@ import java.nio.ByteBuffer
  * @param keyFrame    Keyframe
  * @param nalUnits    H.264 encoder NAL units
  */
-class MP4FileFrame(val fileOffset:Long, val size:Int, pts:Long, ts:Long, keyFrame:Boolean, nalUnits:List[ByteBuffer])
-  extends MP4Frame(pts, ts, keyFrame, nalUnits) {
+class MP4FileFrame(val fileOffset:Long, val size:Int, pts:Long, ts:Long, duration:Long, keyFrame:Boolean, nalUnits:List[ByteBuffer])
+  extends MP4Frame(pts, ts, duration, keyFrame, nalUnits) {
 
 
 

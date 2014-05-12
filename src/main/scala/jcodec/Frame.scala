@@ -6,7 +6,7 @@ package jcodec
  * @param ts          Timescale
  * @param keyFrame    Keyframe
  */
-class Frame(val pts:Int, val ts:Int, val keyFrame:Boolean) {
+class Frame(val pts:Long, val duration:Long, val ts:Long, val keyFrame:Boolean) {
 
 
 }
