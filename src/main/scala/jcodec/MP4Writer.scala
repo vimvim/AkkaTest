@@ -28,10 +28,16 @@ class MP4Writer(filename:String, avcBox: AvcCBox) {
 
     val movPacket = ByteBuffer.allocate(1024*100)
 
+    println(" Write NAL units")
     for( nalUnitData <- frame.nalUnits ) {
 
+      nalUnitData.mark()
       val nalUnit = NALUnit.read(nalUnitData)
-      println("   NAL:"+nalUnit.`type`)
+      nalUnitData.reset()
+
+      val size = nalUnitData.limit()-nalUnitData.position()
+
+      println("   NAL:"+nalUnit.`type`+" size:"+size)
       nalUnit.`type` match {
 
         case NALUnitType.PPS =>
@@ -44,12 +50,17 @@ class MP4Writer(filename:String, avcBox: AvcCBox) {
 
         case _ =>
           // filteredNalUnits.add(nalUnitData)
-          movPacket.putInt(nalUnitData.limit())
+          movPacket.putInt(size)
           movPacket.put(nalUnitData)
       }
     }
 
+    // TODO: Take into account - that length on the NAL is variable and configured n the AVC.
+    // TODO: So we may needs to use joinNALUnits+encodeMOVPacket or create our own function for this
+
     movPacket.flip()
+    val size = movPacket.limit()-movPacket.position()
+    println(s" Write packet data size:$size")
 
     // H264Utils.joinNALUnits(filteredNalUnits, movPacket)
     // H264Utils.encodeMOVPacket(movPacket)
@@ -78,6 +89,7 @@ class MP4Writer(filename:String, avcBox: AvcCBox) {
 
     // val mp4Packet = new MP4Packet(new Packet(frame, data), frame.getPts(), 0)
     val mp4Packet = new MP4Packet(movPacket, frame.pts, frame.ts, frame.duration, frameIdx, frame.keyFrame, null, frame.pts, 0)
+    println(s" Write packet MediaPTS:${mp4Packet.getMediaPts} PTS:${mp4Packet.getPts} TS:${mp4Packet.getTimescale} Duration:${mp4Packet.getDuration} FrameNO:${mp4Packet.getFrameNo} KeyFrame:${mp4Packet.isKeyFrame} offset:${mp4Packet.getFileOff} size:${mp4Packet.getSize}")
 
     videoTrack.addFrame(mp4Packet)
 
