@@ -5,7 +5,7 @@ import scala.collection.immutable.ListSet
 
 import akka.util.ByteString
 
-import rtmp.amf.Serializer
+import rtmp.amf.{AmfMixedMap, Serializer}
 import rtmp.status.Status
 
 
@@ -22,6 +22,17 @@ case class Notify(action:String, params:List[Any]) extends Packet {
   def typeID = PacketTypes.TYPE_NOTIFY
 
   override def serialize(serializer: Serializer):Serializer = {
+
+    serializer.writeObject(action)
+    serializer.writeObject(0)
+
+    // TODO: Write conn params
+    serializer.writeObject(null)
+
+    params.foreach((param)=>{
+      serializer.writeObject(param)
+    })
+
     serializer
   }
 }
@@ -108,6 +119,15 @@ case class ClientBW(bandwidth:Int, limitType:Byte) extends Packet {
   }
 }
 
+case class ChunkSize(chunkSize:Int) extends Packet {
+
+  def typeID = PacketTypes.TYPE_CHUNK_SIZE
+
+  override def serialize(serializer: Serializer):Serializer = {
+    serializer.writeInt(chunkSize)
+  }
+}
+
 trait Control {
 
   def ctrlType:Short
@@ -118,13 +138,13 @@ trait Control {
 
 abstract class ControlPacket extends Packet with Control
 
-case class StreamBegin() extends ControlPacket {
+case class StreamBegin(streamID:Int = 0) extends ControlPacket {
 
   def ctrlType:Short = ControlTypes.STREAM_BEGIN
 
   override def serialize(serializer: Serializer):Serializer = {
     super.serialize(serializer)
-    serializer.writeInt(0)
+    serializer.writeInt(streamID)
   }
 }
 
@@ -152,5 +172,20 @@ case class ClientBuffer(streamId:Int, lengthMs:Int) extends ControlPacket {
     super.serialize(serializer)
     serializer.writeInt(streamId)
     serializer.writeInt(lengthMs)
+  }
+}
+
+/**
+ * Sent from server to client before playing recorder stream
+ *
+ * @param value
+ */
+case class RecordedStream(value:Int)  extends ControlPacket {
+
+  def ctrlType:Short = ControlTypes.RECORDED_STREAM
+
+  override def serialize(serializer: Serializer):Serializer = {
+    super.serialize(serializer)
+    serializer.writeInt(value)
   }
 }

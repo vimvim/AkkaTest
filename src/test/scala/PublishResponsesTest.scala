@@ -156,36 +156,4 @@ class PublishResponsesTest extends FlatSpec with ClassicMatchers with BinaryTest
     */
   }
 
-  private def serializeOut(out: List[OutgoingMessage]):ByteString = {
-
-    val builder = ByteString.newBuilder
-
-    out.foreach((message)=>{
-      builder.append(message.data)
-    })
-
-    builder.result()
-  }
-
-  private def serializePacket(headerFactory:(Int)=>Header, packet:Packet):ByteString = {
-
-    val packetBuilder = ByteString.newBuilder
-
-    val serializer = new Amf0Serializer(packetBuilder)
-    packet.serialize(serializer)
-    val serializedPacket = packetBuilder.result()
-
-    // Encode HEADER_NEW
-    // CHUNK, E, Header [channelId=3, dataType=20, timerBase=0, timerDelta=0, size=225, streamId=0, extendedTimestamp=0],
-    // val header = new FullHeader(3, 0, 0, serializedPacket.length, 20, 0)
-
-    val header = headerFactory(serializedPacket.length)
-
-    val chunkBuilder = ByteString.newBuilder
-    header.serialize(chunkBuilder)
-    chunkBuilder.append(serializedPacket)
-
-    chunkBuilder.result()
-  }
-
 }

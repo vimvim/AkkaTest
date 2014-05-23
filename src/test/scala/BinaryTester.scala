@@ -2,6 +2,7 @@
 import akka.util.ByteString
 import java.io.{FileInputStream, FileNotFoundException, File}
 import org.scalatest.FlatSpec
+import rtmp.OutgoingMessage
 import utils.HexBytesUtil
 
 /**
@@ -10,6 +11,17 @@ import utils.HexBytesUtil
 trait BinaryTester extends FlatSpec {
 
   protected def dumpDir:String = "dump"
+
+  protected def serializeOut(out: List[OutgoingMessage]):ByteString = {
+
+    val builder = ByteString.newBuilder
+
+    out.foreach((message)=>{
+      builder.append(message.data)
+    })
+
+    builder.result()
+  }
 
   protected def readData(fileName:String):ByteString = {
     ByteString.fromArray(readBytes(fileName))
