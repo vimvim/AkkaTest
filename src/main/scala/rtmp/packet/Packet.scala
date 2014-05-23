@@ -137,3 +137,20 @@ case class ClientPing(time:Int) extends ControlPacket {
     serializer.writeInt(time)
   }
 }
+
+/**
+ * Client specified size of the play buffer ( in milliseconds )
+ *
+ * @param streamId    Stream ID
+ * @param lengthMs    Buffer length ( milliseconds )
+ */
+case class ClientBuffer(streamId:Int, lengthMs:Int) extends ControlPacket {
+
+  def ctrlType:Short = ControlTypes.CLIENT_BUFFER
+
+  override def serialize(serializer: Serializer):Serializer = {
+    super.serialize(serializer)
+    serializer.writeInt(streamId)
+    serializer.writeInt(lengthMs)
+  }
+}

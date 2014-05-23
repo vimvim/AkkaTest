@@ -19,6 +19,7 @@ class ControlDecoder extends PacketDecoder {
     ctrlType match {
       case ControlTypes.STREAM_BEGIN => StreamBegin()
       case ControlTypes.PING_CLIENT => ClientPing(dataIterator.getInt(ByteOrder.BIG_ENDIAN))
+      case ControlTypes.CLIENT_BUFFER => ClientBuffer(dataIterator.getInt(ByteOrder.BIG_ENDIAN), dataIterator.getInt(ByteOrder.BIG_ENDIAN))
     }
   }
 }

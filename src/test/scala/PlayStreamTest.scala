@@ -1,8 +1,12 @@
 
+import akka.io.Tcp.Received
 import java.net.InetSocketAddress
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
 import java.security.{PrivateKey, PublicKey, KeyFactory, KeyPair}
 
+import rtmp.amf.AmfNull
+import rtmp.packet.Invoke
+import rtmp.packet.ServerBW
 import scala.concurrent.duration._
 
 import akka.io.Tcp.{Write, Received}
@@ -11,7 +15,7 @@ import akka.testkit._
 import akka.event.Logging
 
 import rtmp.amf.{AmfMixedMap, AmfNull}
-import rtmp.packet.{ServerBW, Notify, Invoke, Packet}
+import rtmp.packet._
 import rtmp.{Message, HandshakeDataProvider, ConnHandler}
 
 import org.scalatest.{ BeforeAndAfterAll, FlatSpec }
@@ -70,6 +74,7 @@ class PlayStreamTest(_system: ActorSystem) extends RtmpStreamTest(_system: Actor
       ServerBW(10000000)
     ))
     testInputPackets("in_4.rtmp", List[Packet](
+      ClientBuffer(0,2000),
       Invoke("createStream", 2, List(AmfNull()))
     ))
 
